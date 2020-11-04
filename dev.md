@@ -63,5 +63,10 @@ Application name : dc.openapi.client.api
 OpenAPI 2.0 swagger: /opt/irisapp/src/clientgen.json
 web app name : /swaggerclientgen/api
 ```
-
+Swagger UI : http://localhost:52795/swagger-ui/index.html
 Swagger URL : http://localhost:52795/swaggerclientgen/api/_spec
+
+Swagger-UI : https://www.lscalese.ovh/swagger-ui/index.html
+Swagger URL : https://www.lscalese.ovh/swaggerclientgen/api/_spec
+
+PetShop example specification : https://petstore.swagger.io/v2/swagger.json

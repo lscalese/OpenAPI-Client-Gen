@@ -19,7 +19,7 @@ ClassMethod addPet(petName As %String = {"kitty_"_$Random(1000)}) As %Status
     Set entry.petName = petName
     Set entry.categoryName = "Admin Cat"
     Set entry.categoryId = 99555
-    
+    Write !,"Add a pet entry with name "_petName
     Return entry.%Save()
 }
 

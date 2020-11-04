@@ -11,8 +11,8 @@ XData OpenAPI [ MimeType = application/json ]
 /// Generate the client classes<br/>
 /// Specify your application package in appName argument.<br/>
 /// spec is the open api 2.0 specification in JSON Format<br/>
-///  it could be a stream, a dynamic object or an URL.<br/>
-/// ex: Set sc = ..generateApp("petstore", "https://petstore.swagger.io:443/v2/swagger.json")
+/// It could be a stream, a dynamic object or an URL.<br/>
+/// ex: Set sc = ##class(dc.openapi.client.Spec).generateApp("petstore", "https://petstore.swagger.io:443/v2/swagger.json")
 ClassMethod generateApp(appName As %String, spec) As %Status
 {
     If $Isobject(spec) {
