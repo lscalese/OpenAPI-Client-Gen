@@ -1,1 +1,3 @@
-SELECT top 100 * FROM dc_Reddit.Post
+SELECT ID, petName, categoryName, categoryId 
+FROM dc_openapi_client_samples.InputPet
+WHERE state = 'N'

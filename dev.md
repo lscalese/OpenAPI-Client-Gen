@@ -53,3 +53,15 @@ zn "%SYS" \
 
 zw ##class(community.csvgen).GenerateFromURL("https://github.com/h2oai/h2o-tutorials/raw/master/h2o-world-2017/automl/data/product_backorders.csv")
 
+## Create rest api
+
+```
+zn "irisapp"
+Do ^%REST
+
+Application name : dc.openapi.client.api
+OpenAPI 2.0 swagger: /opt/irisapp/src/clientgen.json
+web app name : /swaggerclientgen/api
+```
+
+Swagger URL : http://localhost:52795/swaggerclientgen/api/_spec

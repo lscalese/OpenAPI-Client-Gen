@@ -1,20 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Export generator="Cache" version="25">
-  <Document name="interoperability-sample.ZPM">
+  <Document name="openapi-client-gen.ZPM">
     <Module>
-      <Name>interoperability-sample</Name>
-      <Description>A simple IRIS interoperability application - reads data from Reddit and filter it.</Description>
-      <Version>0.0.2</Version>
+      <Name>openapi-client-gen</Name>
+      <Description>Class generator based on open api specification (Business Operation, Business Service, EnsRequest)</Description>
+      <Version>0.0.1</Version>
       <Packaging>module</Packaging>
-      <Dependencies>
-        <ModuleReference>
-          <Name>sslclient</Name>
-          <Version>1.0.1</Version>
-        </ModuleReference>
-      </Dependencies>
       <SourcesRoot>src</SourcesRoot>
-      <Resource Name="dc.Reddit.PKG"/>
-      <Resource Name="dc.Demo.PKG"/>
+      <Resource Name="dc.openapi.client.PKG"/>
+
+      <CSPApplication 
+            SourcePath="/web"
+            DeployPath="${cspdir}/swaggerclientgen/api"
+            Url="/swaggerclientgen/api" 
+            CookiePath="/swaggerclientgen/api/"
+            PasswordAuthEnabled="1"
+            AuthenticationMethods="32" 
+            Recurse="1"
+            MatchRoles=":%DB_${Namespace}"
+            DispatchClass="dc.openapi.client.apigen.disp"/>
+
       <SystemRequirements Version=">=2020.1" Interoperability="enabled" />
     </Module>
   </Document>
