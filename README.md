@@ -26,7 +26,7 @@ Also the [method](https://github.com/lscalese/OpenAPI-Client-Gen/blob/master/src
 
 Export classes addPetOperation, addPetRequest, addPetService to your projet
 
-<img width="1123" src="./assets/PetShop-ExportClasses.png">
+<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/PetShop-ExportClasses.png">
 
 Take a look on these generated class:  
 * petshop.addPetService is a BusinessService template class which should be edited with your need (It's our next step).  
@@ -86,16 +86,16 @@ Method OnProcessInput(pInput As dc.openapi.client.samples.InputPet, pOutput As %
 ### Configure a production
 
 Open the [production page](http://localhost:52795/csp/irisapp/EnsPortal.ProductionConfig.zen) and create a new production.  
-<img width="1123" src="./assets/Create-Production.png">
+<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Create-Production.png">
 
 After that add to your production addPetService and addPetOperation.  
-<img width="1123" src="./assets/Production-AddPetService.png">
+<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Production-AddPetService.png">
 
-<img width="1123" src="./assets/Production-AddPetOperation.png">
+<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Production-AddPetOperation.png">
 
 Configure the Business Operation with the http server and a SSL Config:  
 
-<img width="1123" src="./assets/Production-ConfigOperation.png">
+<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Production-ConfigOperation.png">
 
 Apply and start the production.  
 
@@ -112,10 +112,10 @@ Do ##class(dc.openapi.client.samples.PetShop).addPet()
 
 Now you can check your production and the message viewer.
 
-<img width="1123" src="./assets/Production-MessageViewer.png">
+<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Production-MessageViewer.png">
 
 Also you can see, the Http Status code logged with a LOG macro
-<img width="1123" src="./assets/Production-FullTrace.png">
+<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Production-FullTrace.png">
 
 ## Code snippet
 
@@ -159,11 +159,11 @@ You can easily test it with swagger-ui tools:
 * Select schemes http.  
 * In the body parameter, put your swagger 2.0 on json format or an url to download the json file.
 
-<img width="1123" src="./assets/Swagger-ui-1.png">
+<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Swagger-ui-1.png">
 
 * click execute and then download
 
-<img width="1123" src="./assets/Swagger-ui-2.png">
+<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Swagger-ui-2.png">
 
 ## Prerequisites
 Make sure you have [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) and [Docker desktop](https://www.docker.com/products/docker-desktop) installed.
