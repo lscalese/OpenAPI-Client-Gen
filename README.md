@@ -24,14 +24,14 @@ Write !,"Status : ",$SYSTEM.Status.GetOneErrorText(sc)
 The first argument is the package name where the classes will be generated and the second is the Swagger 2.0 specification URL.  
 Also the [method](https://github.com/lscalese/OpenAPI-Client-Gen/blob/master/src/dc/openapi/client/Spec.cls#L11) accept a filename or dynamic object.  
 
-Export classes addPetOperation, addPetRequest, addPetService to your projet
+Export classes Operation, addPetRequest, addPetService to your projet
 
 <img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/PetShop-ExportClasses.png">
 
 Take a look on these generated class:  
 * petshop.addPetService is a BusinessService template class which should be edited with your need (It's our next step).  
 * petshop.addPetRequest class represent is a subclass of EnsRequest and there is a property for each parameter defined in the swagger specification.  For unicity reason, the property name is a combination of parameter name and his location (body, path, header, request).  
-* petshop.addPetOperation is the BusinessOperation generated class. It contain the generated to code to fill a %Net.HttpRequest object from the EnsRequest object.  This is the most interesting code generation in this project.  
+* petshop.Operation is the BusinessOperation generated class. It contain the generated to code to fill a %Net.HttpRequest object from the EnsRequest object for each service defined in the open api specification.  There is an auto-generated message map to link each EnsRequest type to the related method.  
 
 ### Prepare the BusinessService class
 
