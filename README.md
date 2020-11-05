@@ -117,6 +117,54 @@ Now you can check your production and the message viewer.
 Also you can see, the Http Status code logged with a LOG macro
 <img width="1123" src="./assets/Production-FullTrace.png">
 
+## Code snippet
+
+### Generate classes on local machine
+
+By URL
+```
+Set sc = ##class(dc.openapi.client.Spec).generateApp("petshop", "https://petstore.swagger.io:443/v2/swagger.json")
+```
+By filename, ex:
+```
+Set sc = ##class(dc.openapi.client.Spec).generateApp("petshop", "/opt/irisapp/clientgen.json")
+```
+By DynamicObject
+
+```
+Set spec = {} ; Set your specficiation here
+Set sc = ##class(dc.openapi.client.Spec).generateApp("petshop", spec)
+```
+
+### Generate classes for export code purpose only
+
+```
+TSTART
+Set generator = ##class(dc.openapi.client.Generator).%New()
+Set generator.spec = spec
+Set generator.application = appName
+Set generator.compile = 0
+Set sc = generator.generate()
+Do $SYSTEM.OBJ.ExportPackageToStream(appName, .xmlStream)
+TROLLBACK ; Code has been exported to xmlStream, a simple TROLLBACK delete all generated definition in code database.
+```
+
+## REST Api
+
+A REST Api is also available for upload swagger specification document and download all generated classes to xml format.  
+You can easily test it with swagger-ui tools:  
+
+* Open swagger-ui : http://localhost:52795/swagger-ui/index.html
+* Explore : http://localhost:52795/swaggerclientgen/api/_spec
+* Select schemes http.  
+* In the body parameter, put your swagger 2.0 on json format or an url to download the json file.
+
+<img width="1123" src="./assets/Swagger-ui-1.png">
+
+* click execute and then download
+
+<img width="1123" src="./assets/Swagger-ui-2.png">
+
 ## Prerequisites
 Make sure you have [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) and [Docker desktop](https://www.docker.com/products/docker-desktop) installed.
 
@@ -124,7 +172,14 @@ Make sure you have [git](https://git-scm.com/book/en/v2/Getting-Started-Installi
 
 Open IRIS Namespace with Interoperability Enabled.
 Open Terminal and call:
-USER>zpm "install openapi-client-gen"
+```
+zpm "install openapi-client-gen"
+```
+
+Optional swagger-ui: 
+```
+zpm "install swagger-ui"
+```
 
 ## Installation: Docker
 Clone/git pull the repo into any local directory
