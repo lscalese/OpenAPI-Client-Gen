@@ -67,39 +67,43 @@ ClassMethod %CreateClientApplication(applicationName As %String, swagger As %Dyn
     Try {
         
         Set specClass = applicationName _ ".spec"
-        Set clientClass = applicationName _ ".client"
-
-        /// Create or update a class with Open Api specification
 
         Set cDef=##class(%Dictionary.ClassDefinition).%OpenId(specClass,4,.sc)
         
         If $Isobject(cDef) {
             Do ..%RemoveXDataBlock(cDef,..#XDataName)
-            Set newApplication=0
+            Set newApplication = $$$NO
         } Else {
             Set cDef=##class(%Dictionary.ClassDefinition).%New(specClass)
-            Set newApplication=1
+            Set newApplication = $$$YES
         }
 
-        Set cDef.Super = "dc.openapi.client.Spec"
-        Set cDef.ProcedureBlock=1
+        ; $$$TOE(sc, ..generateSimpleClient()) ; must be refactor
+        ; security to avoid overwrite an existing package on the server ...
+        If newApplication && ##class(dc.openapi.client.Generator).packageExists(applicationName)  { 
+            Set sc = $$$ERROR(5001, "Overwritting code protection.  This package already exist on the server, please choose an other appName "_applicationName)
+            $$$ThrowStatus(sc)
+        }
+
+        Set cDef.Super = "%RegisteredObject"
+        Set cDef.ProcedureBlock = $$$YES
 
         Set xData=##class(%Dictionary.XDataDefinition).%New()
         Set xData.Name=..#XDataName
         Set xData.MimeType="application/json"
 
-        
         Set formatter=##class(%JSON.Formatter).%New()
-        $$$TOE(sc, formatter.FormatToString(swagger, .swaggerString))
         
-        $$$TOE(sc, xData.Data.Write(swaggerString))
-        $$$TOE(sc, cDef.XDatas.Insert(xData))
-        $$$TOE(sc, cDef.%Save())
+        $$$ThrowOnError(formatter.FormatToString(swagger, .swaggerString))
+        $$$ThrowOnError(xData.Data.Write(swaggerString))
+        $$$ThrowOnError(cDef.XDatas.Insert(xData))
+        $$$ThrowOnError(cDef.%Save())
+        $$$ThrowOnError($system.OBJ.Compile(specClass,"ck-d"))
         
-        Do $system.OBJ.Delete(clientClass,"-d")
-        Write !,"Compile ",specClass
-        $$$TOE(sc, $system.OBJ.Compile(specClass,"ck-d"))
-        Write !,"Compile ",sc
+        Set generator = ##class(dc.openapi.client.Generator).%New()
+        Set generator.spec = swagger
+        Set generator.application = applicationName
+        Set sc = generator.generate()
 
     } Catch (ex) {
         Set sc = ex.AsStatus()
@@ -112,25 +116,6 @@ ClassMethod %CreateClientApplication(applicationName As %String, swagger As %Dyn
     }
     
     Return sc
-}
-
-ClassMethod %OnCompile() [ CodeMode = objectgenerator, ForceGenerate ]
-{
-    ;Write !,"%OnCompile"
-	// Don't run this method on the base class
-	Set classname=%compiledclass.Name
-	Return:classname="dc.openapi.client.Spec" $$$OK
-
-	Set sc=$$$OK
-
-    Set xdata = ##class(%Dictionary.XDataDefinition).%OpenId( classname _ "||OpenAPI" )
-    Set spec = {}.%FromJSON(xdata.Data)
-    Set generator = ##class(dc.openapi.client.Generator).%New()
-    Set generator.spec = spec
-    Set generator.application = $Piece(classname, ".", 1, *-1)
-    ;W !,$SYSTEM.Status.GetOneErrorText(generator.generate())
-    Set sc = generator.generate()
-	Quit sc
 }
 
 ClassMethod %RemoveXDataBlock(cDef, blockName)

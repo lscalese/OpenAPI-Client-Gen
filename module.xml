@@ -6,9 +6,14 @@
       <Description>Class generator based on open api specification (Business Operation, Business Service, EnsRequest)</Description>
       <Version>0.0.1</Version>
       <Packaging>module</Packaging>
+      <Dependencies>
+        <ModuleReference>
+          <Name>sslclient</Name>
+          <Version>1.0.1</Version>
+        </ModuleReference>
+      </Dependencies>
       <SourcesRoot>src</SourcesRoot>
       <Resource Name="dc.openapi.client.PKG"/>
-
       <CSPApplication 
             SourcePath="/web"
             DeployPath="${cspdir}/swaggerclientgen/api"
@@ -19,7 +24,6 @@
             Recurse="1"
             MatchRoles=":%DB_${Namespace}"
             DispatchClass="dc.openapi.client.apigen.disp"/>
-
       <SystemRequirements Version=">=2020.1" Interoperability="enabled" />
     </Module>
   </Document>

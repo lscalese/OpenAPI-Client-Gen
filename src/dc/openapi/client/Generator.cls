@@ -5,13 +5,18 @@ Property spec As %DynamicObject;
 
 Property application As %String;
 
-Property ensemble As %Boolean [ InitialExpression = 1 ];
+// Property ensemble As %Boolean [ InitialExpression = 1 ];
 
 Property debug As %Boolean [ InitialExpression = {$Get(%zDebug,0)} ];
 
 Property tmp As %Binary [ MultiDimensional ];
 
 Property compile As %Boolean [ InitialExpression = 1 ];
+
+/// To avoid erasing existing code, the generator don't overwrite existing classes.  These classes are skiped.<br/>
+/// For generator testing\development purpose, It could be usefull to erase existing classes<br/>
+/// Set to true if you wish this behavior or set %zOverwriteIfExist=1 in your process\terminal.
+Property overwriteIfExist As %Boolean [ InitialExpression = {+$Get(%zOverwriteIfExist,0)} ];
 
 Method generate() As %Status
 {
@@ -20,11 +25,9 @@ Method generate() As %Status
     
     Try {
    
-        ; $$$TOE(sc, ..generateSimpleClient()) ; must be refactor
-
-        If ..ensemble {
+        ;If ..ensemble {
             $$$TOE(sc, ..generateEnsembleClasses())
-        }
+        ;}
 
     } Catch (ex) {
         Set sc = ex.AsStatus()
@@ -37,6 +40,12 @@ Method generate() As %Status
     }
 
     Return sc
+}
+
+ClassMethod packageExists(packageName As %String) As %Boolean
+{
+    Set packageList = ##class(%Dictionary.PackageDefinition).GetPackageList()
+    Return ''packageList.Find($zcvt(packageName, "U"))
 }
 
 Method generateEnsembleClasses() As %SYSTEM.Status
@@ -54,11 +63,9 @@ Method generateEnsembleClasses() As %SYSTEM.Status
             Set %zCurrentData("method") = method
          
             $$$ThrowOnError(..ensRequestClass(serviceDefinition, value))
+            $$$ThrowOnError(..ensServiceClass(serviceDefinition))
+            $$$ThrowOnError(..ensOperationClass(serviceDefinition))
             
-            If ..ensemble {
-                $$$ThrowOnError(..ensServiceClass(serviceDefinition))
-                $$$ThrowOnError(..ensOperationClass(serviceDefinition))
-            }
         }
     
     }
@@ -66,15 +73,19 @@ Method generateEnsembleClasses() As %SYSTEM.Status
     Return sc
 }
 
-Method ensOperationClass(serviceDefinition As %Library.DynamicObject) As %Status
+Method ensOperationClass(serviceDefinition As %Library.DynamicObject) As %Status [ Private ]
 {
     Set sc = $$$OK
     
     Set ensRequestClassName = ..application _ "." _ serviceDefinition.operationId _ "Request"
     Set ensOperationClassName = ..application _ "." _ serviceDefinition.operationId _ "Operation"
 
-
-    Kill ^oddDEF(ensOperationClassName)
+    If $Data(^oddDEF(ensOperationClassName)) && '..overwriteIfExist {
+        Write !,ensOperationClassName, " already exists, class skipped"
+        Return $$$OK
+    } Else {
+        Kill ^oddDEF(ensOperationClassName)
+    }
 
     Set cDef = ##class(%Dictionary.ClassDefinition).%New(ensOperationClassName)
     Set cDef.Super = "Ens.BusinessOperation"
@@ -190,15 +201,22 @@ Method ensOperationClass(serviceDefinition As %Library.DynamicObject) As %Status
     Return sc
 }
 
-Method ensServiceClass(serviceDefinition As %Library.DynamicObject) As %Status
+Method ensServiceClass(serviceDefinition As %Library.DynamicObject) As %Status [ Private ]
 {
     Set sc = $$$OK
 
     Set serviceClassName = ..application _ "." _ serviceDefinition.operationId _ "Service"
+    
+    If $Data(^oddDEF(serviceClassName)) && '..overwriteIfExist {
+        Write !,serviceClassName, " already exists, class skipped"
+        Return $$$OK
+    } Else {
+        Kill ^oddDEF(serviceClassName)
+    }
+
     Set ensRequestClassName = ..application _ "." _ serviceDefinition.operationId _ "Request"
     Set ensOperationClassName = ..application _ "." _ serviceDefinition.operationId _ "Operation"
     
-    Kill ^oddDEF(serviceClassName)
 
     Set cDef = ##class(%Dictionary.ClassDefinition).%New(serviceClassName)
     Set cDef.Super = "Ens.BusinessService"
@@ -240,7 +258,7 @@ Method ensServiceClass(serviceDefinition As %Library.DynamicObject) As %Status
     Set pList = $lfs(..tmp("ensRequest", ensRequestClassName, "REQUESTPARAMLOCATION"),","), ptr = 0
 
     While $Listnext(pList, ptr, propertyName) {
-        Do:(propertyName'="accept")&&(propertyName'="consume") mDef.Implementation.WriteLine($Char(9) _"Set msg."_$Piece(propertyName,":",1)_" = """" ; To implement")
+        Do:($Piece(propertyName,":",1)'="accept")&&($Piece(propertyName,":",1)'="consume") mDef.Implementation.WriteLine($Char(9) _"Set msg."_$Piece(propertyName,":",1)_" = """" ; To implement")
     }
 
     Do mDef.Implementation.WriteLine($Char(9) _ "Return ..SendRequestAsync("""_ensOperationClassName_""", msg)")
@@ -256,20 +274,27 @@ Method ensServiceClass(serviceDefinition As %Library.DynamicObject) As %Status
     Return sc
 }
 
-Method ensRequestClass(serviceDefinition As %Library.DynamicObject, value As %Library.DynamicObject) As %Status
+Method ensRequestClass(serviceDefinition As %Library.DynamicObject, value As %Library.DynamicObject) As %Status [ Private ]
 {
     Set sc = $$$OK
-
     Set className = ..application _ "." _ serviceDefinition.operationId _ "Request"
-    Kill ^oddDEF(className)
+    
+
+    If $Data(^oddDEF(className)) && '..overwriteIfExist {
+        Write !,className, " already exists, class skipped"
+        Return $$$OK
+    } Else {
+        Kill ^oddDEF(className)
+    }
 
     Set cDef = ##class(%Dictionary.ClassDefinition).%New(className)
     Set cDef.Description = "Request Object for application : "_..application _ $$$NL_"<br/>"
                             _ "Service : "_serviceDefinition.operationId
 
-    If ..ensemble {
-        Set cDef.Super = "Ens.Request"
-    }
+    ;If ..ensemble {
+        Set cDef.Super = "%Persistent,Ens.Request"
+        Set cDef.Inheritance = "left"
+    ;}
     
     /* consume property */
     Set property = ##class(%Dictionary.PropertyDefinition).%New()
