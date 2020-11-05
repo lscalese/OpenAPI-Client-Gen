@@ -29,8 +29,8 @@ Export classes addPetOperation, addPetRequest, addPetService to your projet
 <img width="1123" src="./assets/PetShop-ExportClasses.png">
 
 Take a look on these generated class:  
-* petshop.addPetService is a BusinessService template class which should be edited with your need.  
-* petshop.addPetRequest class represent is a subclass of EnsRequest and there is a property for each parameter defined in the swagger specification.  
+* petshop.addPetService is a BusinessService template class which should be edited with your need (It's our next step).  
+* petshop.addPetRequest class represent is a subclass of EnsRequest and there is a property for each parameter defined in the swagger specification.  For unicity reason, the property name is a combination of parameter name and his location (body, path, header, request).  
 * petshop.addPetOperation is the BusinessOperation generated class. It contain the generated to code to fill a %Net.HttpRequest object from the EnsRequest object.  This is the most interesting code generation in this project.  
 
 ### Prepare the BusinessService class
@@ -109,6 +109,13 @@ To generate input data, call this method in a terminal:
 ```
 Do ##class(dc.openapi.client.samples.PetShop).addPet()
 ```
+
+Now you can check your production and the message viewer.
+
+<img width="1123" src="./assets/Production-MessageViewer.png">
+
+Also you can see, the Http Status code logged with a LOG macro
+<img width="1123" src="./assets/Production-FullTrace.png">
 
 ## Prerequisites
 Make sure you have [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) and [Docker desktop](https://www.docker.com/products/docker-desktop) installed.

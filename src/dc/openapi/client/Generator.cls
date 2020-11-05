@@ -172,6 +172,10 @@ Method ensOperationClass(serviceDefinition As %Library.DynamicObject) As %Status
     }
 
     Do mDef.Implementation.WriteLine($Char(9) _ "Set sc = ..Adapter.SendFormDataArray(.pHttpResponse, """_ %zCurrentData("method") _""", pHttpRequestIn , , , pURL)")
+    Do mDef.Implementation.WriteLine($Char(9) _ "If $$$ISOK(sc) {")
+    Do mDef.Implementation.WriteLine($Char(9,9) _ "Set logMsg = pHttpResponse.StatusCode_"" ""_pHttpResponse.ReasonPhrase")
+    Do mDef.Implementation.WriteLine($Char(9,9) _ "If pHttpResponse.StatusCode = 200 { $$$LOGINFO(logMsg) } Else { $$$LOGERROR(logMsg) }")
+    Do mDef.Implementation.WriteLine($Char(9) _ "} Else {$$$LOGSTATUS(sc)} ")
     Do mDef.Implementation.WriteLine($Char(9) _ "Return sc")
     
     
@@ -222,21 +226,21 @@ Method ensServiceClass(serviceDefinition As %Library.DynamicObject) As %Status
     Set consumesList = $Get(..tmp(%zCurrentData("ServiceLocation"), %zCurrentData("method"),"consume")), ptr = 0
     If consumesList '= "" {
         While $Listnext(consumesList, ptr, consumeValue) {
-            Do mDef.Implementation.WriteLine($Char(9) _";Set msg.accept = """ _ consumeValue _""" ; Header ACCEPT")
+            Do mDef.Implementation.WriteLine($Char(9) _";Set msg.consume = """ _ consumeValue _""" ; Content-Type")
         }
     }
 
     Set producesList = $Get(..tmp(%zCurrentData("ServiceLocation"), %zCurrentData("method"),"produce")), ptr = 0
     If producesList '="" {
         While $Listnext(producesList, ptr, produceValue) {
-             Do mDef.Implementation.WriteLine($Char(9) _";Set msg.produce = """ _ produceValue _""" ; Header ACCEPT")
+             Do mDef.Implementation.WriteLine($Char(9) _";Set msg.accept = """ _ produceValue _""" ; Header ACCEPT")
         }
     }
 
     Set pList = $lfs(..tmp("ensRequest", ensRequestClassName, "REQUESTPARAMLOCATION"),","), ptr = 0
 
     While $Listnext(pList, ptr, propertyName) {
-        Do:propertyName'="accept" mDef.Implementation.WriteLine($Char(9) _"Set msg."_$Piece(propertyName,":",1)_" = """" ; To implement")
+        Do:(propertyName'="accept")&&(propertyName'="consume") mDef.Implementation.WriteLine($Char(9) _"Set msg."_$Piece(propertyName,":",1)_" = """" ; To implement")
     }
 
     Do mDef.Implementation.WriteLine($Char(9) _ "Return ..SendRequestAsync("""_ensOperationClassName_""", msg)")
