@@ -8,9 +8,9 @@ If this application is hosted on a server, a REST api is available to upload the
 ## Production Sample
 
 This sample generate interoperability classes for [petshop Swagger 2.0 API](https://petstore.swagger.io/) and then  
-use the `/pet Add a new pet to the store` with a simple [InboudAdapter](https://github.com/lscalese/OpenAPI-Client-Gen/blob/master/src/dc/openapi/client/samples/InboundAdapter.cls) which is used by a generated Business Service to create an instance of a generated EnsRequest class.  
+use the `/pet Add a new pet to the store` with a simple [InboudAdapter](https://github.com/lscalese/OpenAPI-Client-Gen/blob/master/src/dc/openapi/client/samples/InboundAdapter.cls) which used by a generated Business Service to create an instance of a generated EnsRequest class.  
  
-After that we link the service to a generated BusinessOperation to perform an http request.  
+After that we link it to a generated BusinessOperation to perform an http request to petstore.swagger.io server.  
 
 ### Generate interoperatibility classes
 
