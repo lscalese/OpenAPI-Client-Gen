@@ -21,7 +21,7 @@ Zn "irisapp"
 Set sc = ##class(dc.openapi.client.Spec).generateApp("petshop", "https://petstore.swagger.io:443/v2/swagger.json")
 Write !,"Status : ",$SYSTEM.Status.GetOneErrorText(sc)
 ```
-The first argument is the package name where the classes will be generate and the seconde is the Swagger 2.0 specification URL.  
+The first argument is the package name where the classes will be generated and the second is the Swagger 2.0 specification URL.  
 Also the [method](https://github.com/lscalese/OpenAPI-Client-Gen/blob/master/src/dc/openapi/client/Spec.cls#L11) accept a filename or dynamic object.  
 
 Export classes addPetOperation, addPetRequest, addPetService to your projet
