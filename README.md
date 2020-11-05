@@ -79,7 +79,7 @@ Method OnProcessInput(pInput As dc.openapi.client.samples.InputPet, pOutput As %
 		"status": "available"
 	}
 	Do msg.bodybody.Write(body.%ToJSON()) ; To implement
-	Return ..SendRequestAsync("petshop.addPetOperation", msg)
+	Return ..SendRequestAsync("petshop.Operation", msg)
 }
 ```
 
