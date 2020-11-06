@@ -13,6 +13,12 @@ Property tmp As %Binary [ MultiDimensional ];
 
 Property compile As %Boolean [ InitialExpression = 1 ];
 
+Property ensOperationClassName As %String [ Private ];
+
+Property ensGenericResponseClassName As %String [ Private ];
+
+Property ensProcessClassName As %String [ Private ];
+
 /// To avoid erasing existing code, the generator don't overwrite existing classes.  These classes are skiped.<br/>
 /// For generator testing\development purpose, It could be usefull to erase existing classes<br/>
 /// Set to true if you wish this behavior or set %zOverwriteIfExist=1 in your process\terminal.
@@ -24,8 +30,12 @@ Method generate() As %Status
     TStart 
     
     Try {
-   
-        $$$TOE(sc, ..generateEnsembleClasses())
+        
+        If ..spec.swagger '= "2.0" {
+            $$$ThrowStatus($$$ERROR(5001,$$$FormatText("Currently this tool support only swagger 2.0 (swagger reached: %1).", ..spec.swagger)))
+        } 
+
+        $$$ThrowOnError(..generateEnsembleClasses())
         
     } Catch (ex) {
         Set sc = ex.AsStatus()
@@ -51,9 +61,12 @@ Method generateEnsembleClasses() As %SYSTEM.Status
     Set sc = $$$OK
     
     Try {
-        Set ensOperationClassName = ..application _ ".Operation" 
+        Set ..ensOperationClassName = ..application _ ".Operation" 
+        Set ..ensGenericResponseClassName = ..application _ ".GenericResponse" 
+        Set ..ensProcessClassName = ..application _ ".Process" 
 
-        $$$ThrowOnError(..ensOperationClass(ensOperationClassName))
+        $$$ThrowOnError(..ensGenericResponse())
+        $$$ThrowOnError(..ensOperationClass())
 
         Set iter = ..spec.paths.%GetIterator()
         While iter.%GetNext(.serviceLocation , .value ) {
@@ -67,16 +80,18 @@ Method generateEnsembleClasses() As %SYSTEM.Status
             
                 $$$ThrowOnError(..ensRequestClass(serviceDefinition, value))
                 $$$ThrowOnError(..ensServiceClass(serviceDefinition))
-                $$$ThrowOnError(..ensOperationMethod(serviceDefinition, ensOperationClassName))
+                $$$ThrowOnError(..ensOperationMethod(serviceDefinition))
                 
             }
         
         }
         
-        $$$ThrowOnError(..messageMap(ensOperationClassName))
-
+        $$$ThrowOnError(..messageMap())
+        $$$ThrowOnError(..ensProcessClass())
+        $$$ThrowOnError(..ensProduction())
+        
         If ..compile {
-            Set sc = $system.OBJ.Compile(..application _ ".Operation" ,"ck")
+            Set sc = $system.OBJ.Compile(..ensOperationClassName ,"ck")
         }
     } Catch(ex) {
         Set sc = ex.AsStatus()
@@ -85,30 +100,28 @@ Method generateEnsembleClasses() As %SYSTEM.Status
     Return sc
 }
 
-Method ensOperationMethod(serviceDefinition As %Library.DynamicObject, ensOperationClassName As %String = {..application _ ".Operation"}) As %Status
+Method ensOperationMethod(serviceDefinition As %Library.DynamicObject) As %Status
 {
     Set sc = $$$OK
-
+    Set ensOperationClassName = ..ensOperationClassName
     Set cDef = ##class(%Dictionary.ClassDefinition).%OpenId(ensOperationClassName,,.sc)
-
     Return:$$$ISERR(sc) sc
 
     Set ensRequestClassName = ..application _ "." _ serviceDefinition.operationId _ "Request"
 
     Set methodName = $Zcvt(%zCurrentData("method"),"U")_serviceDefinition.operationId
+    Set ..tmp("MessageMap","MessageType", ensRequestClassName) = methodName
 
     Set mDef = ##class(%Dictionary.MethodDefinition).%New()
     Set mDef.Name = methodName
-    ;Set mDef.Description = "Auto generated method"
     Set mDef.Description = $Replace(serviceDefinition.description, $$$NL, "<br/>"_$$$NL)
     Set mDef.FormalSpec = $$$FormatText("pRequest:%1,pResponse:%2", ensRequestClassName, "Ens.Response")
     Set mDef.ReturnType = "%Status"
-    ;Do mDef.Implementation.WriteLine($Char(9) _ "; Auto generated, put your own code...")
+    
     
     Do mDef.Implementation.WriteLine($Char(9) _"Set pURL = """ _ ..spec.basePath _ %zCurrentData("ServiceLocation") _"""")
     Set pList = $lfs(..tmp("ensRequest", ensRequestClassName, "REQUESTPARAMLOCATION"),","), ptr = 0
     Set mParts = $$$NO
-    ;pHttpRequestIn
     Do mDef.Implementation.WriteLine($Char(9) _ "Set pHttpRequestIn = ##class(%Net.HttpRequest).%New()")
     Do mDef.Implementation.WriteLine($Char(9) _ "Set pHttpRequestIn.ContentType = pRequest.consume")
     While $Listnext(pList, ptr, propertyInfo) {
@@ -168,24 +181,17 @@ Method ensOperationMethod(serviceDefinition As %Library.DynamicObject, ensOperat
     }
 
     Do mDef.Implementation.WriteLine($Char(9) _ "Set sc = ..Adapter.SendFormDataArray(.pHttpResponse, """_ %zCurrentData("method") _""", pHttpRequestIn , , , pURL)")
-    Do mDef.Implementation.WriteLine($Char(9) _ "If $$$ISOK(sc) {")
-    Do mDef.Implementation.WriteLine($Char(9,9) _ "Set logMsg = pHttpResponse.StatusCode_"" ""_pHttpResponse.ReasonPhrase")
-    Do mDef.Implementation.WriteLine($Char(9,9) _ "If pHttpResponse.StatusCode = 200 { $$$LOGINFO(logMsg) } Else { $$$LOGERROR(logMsg) }")
-    Do mDef.Implementation.WriteLine($Char(9) _ "} Else {$$$LOGSTATUS(sc)} ")
+    Do mDef.Implementation.WriteLine($Char(9) _ $$$FormatText("Set pResponse = ##class(%1).%New()",..ensGenericResponseClassName))
+    Do mDef.Implementation.WriteLine($Char(9) _ "Do ..genericProcessResponse(pRequest, pResponse, ""POSTaddPet"", sc, $Get(pHttpResponse))")
     Do mDef.Implementation.WriteLine($Char(9) _ "Return sc")
-
     Do cDef.Methods.Insert(mDef)
 
-    $$$ThrowOnError( cDef.%Save() )
-
-    Set ..tmp("MessageMap","MessageType", ensRequestClassName) = methodName
-
-    Return sc
+    Return cDef.%Save()
 }
 
-Method messageMap(ensOperationClassName As %String) As %Status
+Method messageMap() As %Status
 {
-    Set cDef = ##class(%Dictionary.ClassDefinition).%OpenId(ensOperationClassName,,.sc)
+    Set cDef = ##class(%Dictionary.ClassDefinition).%OpenId(..ensOperationClassName,,.sc)
 
     Return:$$$ISERR(sc) sc
     
@@ -211,10 +217,10 @@ Method messageMap(ensOperationClassName As %String) As %Status
     Return cDef.%Save()
 }
 
-Method ensOperationClass(ensOperationClassName As %String) As %Status [ Private ]
+Method ensOperationClass() As %Status [ Private ]
 {
     Set sc = $$$OK
-    
+    Set ensOperationClassName = ..ensOperationClassName
     If $Data(^oddDEF(ensOperationClassName)) && '..overwriteIfExist {
         Write !,ensOperationClassName, " already exists, class skipped"
         Return $$$OK
@@ -233,7 +239,80 @@ Method ensOperationClass(ensOperationClassName As %String) As %Status [ Private 
     Set classParameter = ..createClassParameter("ADAPTER", "EnsLib.HTTP.OutboundAdapter")
     Do cDef.Parameters.Insert(classParameter)
 
+
+    Set mDef = ##class(%Dictionary.MethodDefinition).%New()
+    Set mDef.Name = "genericProcessResponse"
+    Set mDef.FormalSpec = $$$FormatText("pRequest:%1,pResponse:%2,caller:%String,status:%Status,pHttpResponse:%Net.HttpResponse", "Ens.Request", ..application_".GenericResponse")
+    Set mDef.ReturnType = "%Status"
+
+    Do mDef.Implementation.WriteLine($Char(9) _"Set sc = $$$OK")
+    Do mDef.Implementation.WriteLine($Char(9) _"Set pResponse.operation = caller")
+    Do mDef.Implementation.WriteLine($Char(9) _"Set pResponse.operationStatusText = $SYSTEM.Status.GetOneErrorText(status)")
+    Do mDef.Implementation.WriteLine($Char(9) _"If $Isobject(pHttpResponse) {")
+    Do mDef.Implementation.WriteLine($Char(9,9) _"Set pResponse.httpStatusCode = pHttpResponse.StatusCode")
+    Do mDef.Implementation.WriteLine($Char(9,9) _"Do pResponse.body.CopyFrom(pHttpResponse.Data)")
+    Do mDef.Implementation.WriteLine($Char(9,9) _"Set key = """"")
+    Do mDef.Implementation.WriteLine($Char(9,9) _"For  {")
+    Do mDef.Implementation.WriteLine($Char(9,9,9) _"Set key = $Order(pHttpResponse.Headers(key),1 , headerValue)")
+    Do mDef.Implementation.WriteLine($Char(9,9,9) _"Quit:key=""""")
+    Do mDef.Implementation.WriteLine($Char(9,9,9) _"Do pResponse.headers.SetAt(headerValue, key)")
+    Do mDef.Implementation.WriteLine($Char(9,9) _"}")
+    Do mDef.Implementation.WriteLine($Char(9) _"}")
+    Do mDef.Implementation.WriteLine($Char(9) _"Return sc")
+    
+    Do cDef.Methods.Insert(mDef)
     Set sc = cDef.%Save()
+
+	Return sc
+}
+
+Method ensGenericResponse() As %Status
+{
+    Set sc = $$$OK
+    Set genericResponseClassName = ..ensGenericResponseClassName
+
+    If $Data(^oddDEF(genericResponseClassName)) && '..overwriteIfExist {
+        Write !,genericResponseClassName, " already exists, class skipped"
+        Return $$$OK
+    } Else {
+        Kill ^oddDEF(genericResponseClassName)
+    }
+
+    Set cDef = ##class(%Dictionary.ClassDefinition).%New(genericResponseClassName)
+    Set cDef.Super = "%Persistent,Ens.Response"
+    Set cDef.Inheritance = "left"
+
+    Set property = ##class(%Dictionary.PropertyDefinition).%New()
+    Set property.Name = "httpStatusCode"
+    Set property.Type = "%Integer"
+    Do cDef.Properties.Insert(property)
+
+    Set property = ##class(%Dictionary.PropertyDefinition).%New()
+    Set property.Name = "headers"
+    Set property.Type = "%String"
+    Set property.Collection = "array"
+    Do cDef.Properties.Insert(property)
+
+    Set property = ##class(%Dictionary.PropertyDefinition).%New()
+    Set property.Name = "body"
+    Set property.Type = "%Stream.GlobalBinary"
+    Do cDef.Properties.Insert(property)
+
+    Set property = ##class(%Dictionary.PropertyDefinition).%New()
+    Set property.Name = "operation"
+    Set property.Type = "%Stream.GlobalBinary"
+    Do cDef.Properties.Insert(property)
+
+    Set property = ##class(%Dictionary.PropertyDefinition).%New()
+    Set property.Name = "operationStatusText"
+    Set property.Type = "%String"
+    Do cDef.Properties.Insert(property)
+    
+    $$$ThrowOnError(cDef.%Save())
+
+    If ..compile {
+        Set sc = $SYSTEM.OBJ.Compile(genericResponseClassName,"ck")
+    }
 
     Return sc
 }
@@ -244,6 +323,8 @@ Method ensServiceClass(serviceDefinition As %Library.DynamicObject) As %Status [
 
     Set serviceClassName = ..application _ "." _ serviceDefinition.operationId _ "Service"
     
+    Set ..tmp("SERVICES",serviceClassName)=""
+
     If $Data(^oddDEF(serviceClassName)) && '..overwriteIfExist {
         Write !,serviceClassName, " already exists, class skipped"
         Return $$$OK
@@ -251,8 +332,10 @@ Method ensServiceClass(serviceDefinition As %Library.DynamicObject) As %Status [
         Kill ^oddDEF(serviceClassName)
     }
 
+    
+
     Set ensRequestClassName = ..application _ "." _ serviceDefinition.operationId _ "Request"
-    Set ensOperationClassName = ..application _ ".Operation"
+    Set ensOperationClassName = ..ensOperationClassName
     
 
     Set cDef = ##class(%Dictionary.ClassDefinition).%New(serviceClassName)
@@ -298,7 +381,7 @@ Method ensServiceClass(serviceDefinition As %Library.DynamicObject) As %Status [
         Do:($Piece(propertyName,":",1)'="accept")&&($Piece(propertyName,":",1)'="consume") mDef.Implementation.WriteLine($Char(9) _"Set msg."_$Piece(propertyName,":",1)_" = """" ; To implement")
     }
 
-    Do mDef.Implementation.WriteLine($Char(9) _ "Return ..SendRequestAsync("""_ensOperationClassName_""", msg)")
+    Do mDef.Implementation.WriteLine($Char(9) _ "Return ..SendRequestAsync("""_..ensProcessClassName_""", msg)")
     
     Set mDef.ReturnType = "%Status"
     
@@ -419,6 +502,43 @@ Method ensRequestClass(serviceDefinition As %Library.DynamicObject, value As %Li
     Return sc
 }
 
+Method ensProcessClass() As %Status
+{
+    Set sc = $$$OK
+    
+    If $Data(^oddDEF(..ensProcessClassName)) && '..overwriteIfExist {
+        Write !,..ensProcessClassName, " already exists, class skipped"
+        Return $$$OK
+    } Else {
+        Kill ^oddDEF(..ensProcessClassName)
+    }
+
+    Set cDef = ##class(%Dictionary.ClassDefinition).%New(..ensProcessClassName)
+    Set cDef.Super = "Ens.BusinessProcess"
+
+    Set mDef = ##class(%Dictionary.MethodDefinition).%New()
+    Set mDef.Name = "OnRequest"
+    Set mDef.FormalSpec = $$$FormatText("pRequest:%1,pResponse:%2", "Ens.Request", "Ens.Response")
+    Set mDef.ReturnType = "%Status"
+    Do mDef.Implementation.WriteLine($Char(9) _$$$FormatText("Return ..SendRequestAsync(""%1"", pRequest, 1, pRequest.%ClassName(1))", ..ensOperationClassName))
+    Do cDef.Methods.Insert(mDef)
+
+    Set mDef = ##class(%Dictionary.MethodDefinition).%New()
+    Set mDef.Name = "OnResponse"
+    Set mDef.FormalSpec = "request:%Library.Persistent,response:%Library.Persistent,callrequest:%Library.Persistent,callresponse:%Library.Persistent,pCompletionKey:%String"
+    Set mDef.ReturnType = "%Status"
+    Do mDef.Implementation.WriteLine($Char(9) _"Return $$$OK")
+    Do cDef.Methods.Insert(mDef)
+
+    Set sc = cDef.%Save()
+
+    If ..compile {
+        Set sc = $SYSTEM.OBJ.Compile(..ensProcessClassName, "ck")
+    }
+
+    Return sc
+}
+
 ClassMethod getResponseDoc(responses As %DynamicObject) As %String
 {
     Return:responses="" ""
@@ -454,6 +574,74 @@ Method createClassParameter(name As %String, value As %String) As %Dictionary.Pa
     Set classParameter.Name = name
     Set classParameter.Default = value
     Return classParameter
+}
+
+Method ensProduction() As %Status
+{
+    Set sc = $$$OK
+    Set strServiceTemplate = "<Item Name=""{className}"" Category="""" ClassName=""{className}"" PoolSize=""1"" Enabled=""false"" Foreground=""false"" Comment="""" LogTraceEvents=""false"" Schedule=""""></Item>"
+
+    Set className = ""
+    For  {
+        Set className = $Order(..tmp("SERVICES",className))
+        Quit:className=""
+        Set service($Increment(service)) = $Replace(strServiceTemplate, "{className}", className)
+    }
+    
+    Set xData=##class(%Dictionary.XDataDefinition).%New()
+    Set xData.Name = "ProductionDefinition"
+    
+    
+    Set xDataTemplate = ##class(%Dictionary.XDataDefinition).%OpenId(..%ClassName(1)_"||ProductionDefinitionTemplate",,.sc)
+    Return:$$$ISERR(sc) sc
+
+    
+    While 'xDataTemplate.Data.AtEnd {
+        Set line = xDataTemplate.Data.ReadLine()
+        If line [ "{services}" {
+            Set key = ""
+            For  {
+                Set key = $Order(service(key), 1, serviceStr)
+                Quit:key=""
+                Do xData.Data.WriteLine("  "_serviceStr)
+            }
+        } Else {
+            Set line = $Replace(line, "{application}", ..application)
+            Set line = $Replace(line, "{ensOperationClassName}", ..ensOperationClassName)
+            Set line = $Replace(line, "{ensProcessClassName}", ..ensProcessClassName)
+            Set line = $Replace(line, "{server}", ..spec.host)
+            Set line = $Replace(line, "{SSLConfig}", "default")
+            Do xData.Data.WriteLine(line)
+        }
+    }
+
+    Set productionClassName = ..application_".Production"
+    Set cDef = ##class(%Dictionary.ClassDefinition).%New(productionClassName)
+    Set cDef.Super = "Ens.Production"
+    Do cDef.XDatas.Insert(xData)
+
+    $$$ThrowOnError(cDef.%Save())
+
+    If ..compile {
+        Set sc = $SYSTEM.OBJ.Compile(productionClassName, "ck")
+    }
+
+    Return sc
+}
+
+XData ProductionDefinitionTemplate
+{
+<Production Name="{application}" LogGeneralTraceEvents="false">
+  <Description></Description>
+  <ActorPoolSize>2</ActorPoolSize>
+  {services}
+  <Item Name="{ensOperationClassName}" Category="" ClassName="{ensOperationClassName}" PoolSize="1" Enabled="true" Foreground="false" Comment="" LogTraceEvents="false" Schedule="">
+    <Setting Target="Adapter" Name="HTTPServer">{server}</Setting>
+    <Setting Target="Adapter" Name="SSLConfig">{SSLConfig}</Setting>
+  </Item>
+  <Item Name="{ensProcessClassName}" Category="" ClassName="{ensProcessClassName}" PoolSize="1" Enabled="true" Foreground="false" Comment="" LogTraceEvents="false" Schedule="">
+  </Item>
+</Production>
 }
 
 /*

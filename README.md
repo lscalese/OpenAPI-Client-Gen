@@ -85,17 +85,12 @@ Method OnProcessInput(pInput As dc.openapi.client.samples.InputPet, pOutput As %
 
 ### Configure a production
 
-Open the [production page](http://localhost:52795/csp/irisapp/EnsPortal.ProductionConfig.zen) and create a new production.  
-<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Create-Production.png">
+Open the [production page](http://localhost:52795/csp/irisapp/EnsPortal.ProductionConfig.zen) and open petshop.Production.  
+This is an auto generated production.  
+<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Production-Open.png">
 
-After that add to your production addPetService and addPetOperation.  
-<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Production-AddPetService.png">
-
-<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Production-AddPetOperation.png">
-
-Configure the Business Operation with the http server and a SSL Config:  
-
-<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Production-ConfigOperation.png">
+Enable petshop.addPetService .  
+<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/PetService-Enabled.png">
 
 Apply and start the production.  
 
