@@ -24,7 +24,7 @@ Write !,"Status : ",$SYSTEM.Status.GetOneErrorText(sc)
 The first argument is the package name where the classes will be generated and the second is the Swagger 2.0 specification URL.  
 Also the [method](https://github.com/lscalese/OpenAPI-Client-Gen/blob/master/src/dc/openapi/client/Spec.cls#L11) accept a filename or dynamic object.  
 
-Export classes Operation, addPetRequest, addPetService to your projet
+Export class petshop.addPetService to your projet.  
 
 <img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/PetShop-ExportClasses.png">
 
@@ -79,7 +79,7 @@ Method OnProcessInput(pInput As dc.openapi.client.samples.InputPet, pOutput As %
 		"status": "available"
 	}
 	Do msg.bodybody.Write(body.%ToJSON()) ; To implement
-	Return ..SendRequestAsync("petshop.Operation", msg)
+	Return ..SendRequestAsync("petshop.Process", msg)
 }
 ```
 
@@ -109,7 +109,7 @@ Now you can check your production and the message viewer.
 
 <img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Production-MessageViewer.png">
 
-Also you can analyze alle messages with visual trace.  
+Also you can analyze all messages with visual trace.  
 <img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Visual-Trace.png">
 
 ## Code snippet
