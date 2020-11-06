@@ -109,8 +109,8 @@ Now you can check your production and the message viewer.
 
 <img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Production-MessageViewer.png">
 
-Also you can see, the Http Status code logged with a LOG macro
-<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Production-FullTrace.png">
+Also you can analyze alle messages with visual trace.  
+<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Visual-Trace.png">
 
 ## Code snippet
 
