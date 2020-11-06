@@ -591,7 +591,6 @@ Method ensProduction() As %Status
     Set xData=##class(%Dictionary.XDataDefinition).%New()
     Set xData.Name = "ProductionDefinition"
     
-    
     Set xDataTemplate = ##class(%Dictionary.XDataDefinition).%OpenId(..%ClassName(1)_"||ProductionDefinitionTemplate",,.sc)
     Return:$$$ISERR(sc) sc
 
