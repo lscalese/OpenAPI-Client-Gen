@@ -1,16 +1,15 @@
 ## OPENAPI Client Gen
 
-This is an application to generate Iris interoperability classes from a Swagger 2.0 specification document.  
+This is an application to generate Iris interoperability production from a Swagger 2.0 specification document.  
 It can be used as tool to create classes on your local instance or to be hosted.  
-If this application is hosted on a server, a REST api is available to upload the specification document and download the generated classes.  
+If this application is hosted, a REST api is available to upload the specification document and download the generated classes.  
   
   
 ## Production Sample
 
-This sample generate interoperability classes for [petshop Swagger 2.0 API](https://petstore.swagger.io/) and then  
-use the `/pet Add a new pet to the store` with a simple [InboudAdapter](https://github.com/lscalese/OpenAPI-Client-Gen/blob/master/src/dc/openapi/client/samples/InboundAdapter.cls) which used by a generated Business Service to create an instance of a generated EnsRequest class.  
- 
-After that we link it to a generated BusinessOperation to perform an http request to petstore.swagger.io server.  
+In this sample we generate a production for [petshop Swagger 2.0 API](https://petstore.swagger.io/) REST Api  
+from the [specification 2.0](https://petstore.swagger.io/v2/swagger.json).  
+After that we prepare the BusinessService class from a generated template, generate input data and observes the result.  
 
 ### Generate interoperatibility classes
 
@@ -22,18 +21,43 @@ Set sc = ##class(dc.openapi.client.Spec).generateApp("petshop", "https://petstor
 Write !,"Status : ",$SYSTEM.Status.GetOneErrorText(sc)
 ```
 The first argument is the package name where the classes will be generated and the second is the Swagger 2.0 specification URL.  
-Also the [method](https://github.com/lscalese/OpenAPI-Client-Gen/blob/master/src/dc/openapi/client/Spec.cls#L11) accept a filename or dynamic object.  
+Also the [method](https://github.com/lscalese/OpenAPI-Client-Gen/blob/master/src/dc/openapi/client/Spec.cls#L11) accept a filename or a dynamic object.  
+
+
+Take a look on these generated classes: 
+
+* **Business service classes**  
+BusinessService classes are suffixed by "Service".  There is a Business Service for each request defined in the specification document.  
+The generated classes are templates which should be edited with your need.  In this sample we edit petshop.addPetService at the next step.  
+
+* **Ens.Request classes**  
+For each request defined, an Ens.Request class is generated suffixed by "Request".  
+This class represent all of parameters (query parameters, path, body, headers).  
+The Business operation will consume an instance of this class to generate http request.  
+
+* **GenericResponse class**  
+The Ens.Response generated subclass is named "package.GenericResponse" (petshop.GenericResponse in this sample).  
+It contains some properties to store the body response, headers, http status code, performed operation and status.  
+
+* **Business Process class**  
+The generated Business process name is simply packageName.Process (petshop.Process in this sample).  
+This is a basic implementation that redirect all messages to the Business Operation.  
+
+* **Business Operation class**  
+Probably the most usefull generated class in this project.  
+It contain a method for each request and build a %Net.HttpRequest instance from the Ens.Request subclass.
+A message map XDATA is also generated to call automatically the related method for the received message.  
+A method "genericProcessResponse" is called after each request, feel free to edit with your need.  
+
+* **Production class**  
+A pre-configured production is also generated named pakagename.Production (petshop.Production in this sample).  
+All Business Services are disabled by default.  
+
+### Prepare the BusinessService class
 
 Export class petshop.addPetService to your projet.  
 
 <img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/PetShop-ExportClasses.png">
-
-Take a look on these generated class:  
-* petshop.addPetService is a BusinessService template class which should be edited with your need (It's our next step).  
-* petshop.addPetRequest class represent is a subclass of EnsRequest and there is a property for each parameter defined in the swagger specification.  For unicity reason, the property name is a combination of parameter name and his location (body, path, header, request).  
-* petshop.Operation is the BusinessOperation generated class. It contain the generated to code to fill a %Net.HttpRequest object from the EnsRequest object for each service defined in the open api specification.  There is an auto-generated message map to link each EnsRequest type to the related method.  
-
-### Prepare the BusinessService class
 
 Edit the petshop.addPetService class to use our [dc.openapi.client.samples.InboundAdapter](https://github.com/lscalese/OpenAPI-Client-Gen/blob/master/src/dc/openapi/client/samples/InboundAdapter.cls#L1) ready for our sample.  
 

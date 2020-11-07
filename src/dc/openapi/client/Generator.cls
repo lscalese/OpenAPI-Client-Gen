@@ -103,13 +103,24 @@ Method generateEnsembleClasses() As %SYSTEM.Status
 Method ensOperationMethod(serviceDefinition As %Library.DynamicObject) As %Status
 {
     Set sc = $$$OK
+
+    Set methodName = $Zcvt(%zCurrentData("method"),"U")_serviceDefinition.operationId
     Set ensOperationClassName = ..ensOperationClassName
+
+    If ##class(%Dictionary.MethodDefinition).%ExistsId(ensOperationClassName_"||"_methodName) {
+        If '..overwriteIfExist {
+            Write !,"Method ", methodName, " already exists, Method skipped"
+        } Else {
+            Do ##class(%Dictionary.MethodDefinition).%DeleteId(ensOperationClassName_"||"_methodName)
+        }
+    }
+    
     Set cDef = ##class(%Dictionary.ClassDefinition).%OpenId(ensOperationClassName,,.sc)
     Return:$$$ISERR(sc) sc
 
     Set ensRequestClassName = ..application _ "." _ serviceDefinition.operationId _ "Request"
 
-    Set methodName = $Zcvt(%zCurrentData("method"),"U")_serviceDefinition.operationId
+    
     Set ..tmp("MessageMap","MessageType", ensRequestClassName) = methodName
 
     Set mDef = ##class(%Dictionary.MethodDefinition).%New()
@@ -579,6 +590,15 @@ Method createClassParameter(name As %String, value As %String) As %Dictionary.Pa
 Method ensProduction() As %Status
 {
     Set sc = $$$OK
+    Set productionClassName = ..application_".Production"
+
+    If $Data(^oddDEF(productionClassName)) && '..overwriteIfExist {
+        Write !,productionClassName, " already exists, class skipped"
+        Return $$$OK
+    } Else {
+        Kill ^oddDEF(productionClassName)
+    }
+
     Set strServiceTemplate = "<Item Name=""{className}"" Category="""" ClassName=""{className}"" PoolSize=""1"" Enabled=""false"" Foreground=""false"" Comment="""" LogTraceEvents=""false"" Schedule=""""></Item>"
 
     Set className = ""
@@ -614,7 +634,6 @@ Method ensProduction() As %Status
         }
     }
 
-    Set productionClassName = ..application_".Production"
     Set cDef = ##class(%Dictionary.ClassDefinition).%New(productionClassName)
     Set cDef.Super = "Ens.Production"
     Do cDef.XDatas.Insert(xData)
