@@ -20,10 +20,22 @@
             Url="/swaggerclientgen/api" 
             CookiePath="/swaggerclientgen/api/"
             PasswordAuthEnabled="1"
-            AuthenticationMethods="32" 
+            AuthenticationMethods="64" 
             Recurse="1"
             MatchRoles=":%DB_${Namespace}"
             DispatchClass="dc.openapi.client.api.disp"/>
+      
+      <CSPApplication
+            SourcePath="/web"
+            DeployPath="${cspdir}/swaggerclientgen/api"
+            Url="/csp/swaggerclientgen"
+            CookiePath="/csp/swaggerclientgen/"
+            ServeFiles="1"
+            PasswordAuthEnabled="1"
+            AuthenticationMethods="64" 
+            MatchRoles=":%DB_${Namespace}"
+            Recurse="1"/>
+
       <SystemRequirements Version=">=2020.1" Interoperability="enabled" />
     </Module>
   </Document>

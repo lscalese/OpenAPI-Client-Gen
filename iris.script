@@ -24,6 +24,22 @@
  set sc = ##class(Security.Applications).Create(webName, .webProperties)
  write "Web application "_webName_" has been created!",! 
 
+  ; create web application...
+
+ write "Create web application ...",!
+ Kill webProperties
+ set webName = "/csp/swaggerclientgen"
+ set webProperties("CookiePath") = "/csp/swaggerclientgen/"
+ set webProperties("NameSpace") = "IRISAPP"
+ set webProperties("Enabled") = 1
+ set webProperties("CSPZENEnabled") = 1
+ set webProperties("AutheEnabled") = 64
+ set webProperties("iKnowEnabled") = 1
+ set webProperties("DeepSeeEnabled") = 1
+ Set webProperties("MatchRoles")=":%DB_IRISAPP"
+ set sc = ##class(Security.Applications).Create(webName, .webProperties)
+ write "Web application "_webName_" has been created!",! 
+
  ; fix swagger-ui cookie path
  kill webProperties
  set sc = ##class(Security.Applications).Get("/swagger-ui",.webProperties)
