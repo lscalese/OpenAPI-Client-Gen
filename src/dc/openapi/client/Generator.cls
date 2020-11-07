@@ -109,7 +109,7 @@ Method ensOperationMethod(serviceDefinition As %Library.DynamicObject) As %Statu
 
     If ##class(%Dictionary.MethodDefinition).%ExistsId(ensOperationClassName_"||"_methodName) {
         If '..overwriteIfExist {
-            Write !,"Method ", methodName, " already exists, Method skipped"
+            Write:..debug !,"Method ", methodName, " already exists, Method skipped"
         } Else {
             Do ##class(%Dictionary.MethodDefinition).%DeleteId(ensOperationClassName_"||"_methodName)
         }
@@ -182,7 +182,7 @@ Method ensOperationMethod(serviceDefinition As %Library.DynamicObject) As %Statu
     }
 
     If mParts {
-        Do mDef.Implementation.WriteLine($Char(9) _"If ISOBJECT($Get(mParts)) {")
+        Do mDef.Implementation.WriteLine($Char(9) _"If $ISOBJECT($Get(mParts)) {")
         Do mDef.Implementation.WriteLine($Char(9,9) _"Set mimeWriter = ##class(%Net.MIMEWriter).%New()")
         Do mDef.Implementation.WriteLine($Char(9,9) _"Do mimeWriter.OutputToStream(.stream)")
         Do mDef.Implementation.WriteLine($Char(9,9) _"Do mimeWriter.WriteMIMEBody(mParts)")
@@ -233,7 +233,7 @@ Method ensOperationClass() As %Status [ Private ]
     Set sc = $$$OK
     Set ensOperationClassName = ..ensOperationClassName
     If $Data(^oddDEF(ensOperationClassName)) && '..overwriteIfExist {
-        Write !,ensOperationClassName, " already exists, class skipped"
+        Write:..debug !,ensOperationClassName, " already exists, class skipped"
         Return $$$OK
     } Else {
         Kill ^oddDEF(ensOperationClassName)
@@ -337,7 +337,7 @@ Method ensServiceClass(serviceDefinition As %Library.DynamicObject) As %Status [
     Set ..tmp("SERVICES",serviceClassName)=""
 
     If $Data(^oddDEF(serviceClassName)) && '..overwriteIfExist {
-        Write !,serviceClassName, " already exists, class skipped"
+        Write:..debug !,serviceClassName, " already exists, class skipped"
         Return $$$OK
     } Else {
         Kill ^oddDEF(serviceClassName)
@@ -412,7 +412,7 @@ Method ensRequestClass(serviceDefinition As %Library.DynamicObject, value As %Li
     
 
     If $Data(^oddDEF(className)) && '..overwriteIfExist {
-        Write !,className, " already exists, class skipped"
+        Write:..debug !,className, " already exists, class skipped"
         Return $$$OK
     } Else {
         Kill ^oddDEF(className)
@@ -518,7 +518,7 @@ Method ensProcessClass() As %Status
     Set sc = $$$OK
     
     If $Data(^oddDEF(..ensProcessClassName)) && '..overwriteIfExist {
-        Write !,..ensProcessClassName, " already exists, class skipped"
+        Write:..debug !,..ensProcessClassName, " already exists, class skipped"
         Return $$$OK
     } Else {
         Kill ^oddDEF(..ensProcessClassName)
@@ -593,7 +593,7 @@ Method ensProduction() As %Status
     Set productionClassName = ..application_".Production"
 
     If $Data(^oddDEF(productionClassName)) && '..overwriteIfExist {
-        Write !,productionClassName, " already exists, class skipped"
+        Write:..debug !,productionClassName, " already exists, class skipped"
         Return $$$OK
     } Else {
         Kill ^oddDEF(productionClassName)
