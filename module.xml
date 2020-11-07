@@ -23,7 +23,7 @@
             AuthenticationMethods="32" 
             Recurse="1"
             MatchRoles=":%DB_${Namespace}"
-            DispatchClass="dc.openapi.client.apigen.disp"/>
+            DispatchClass="dc.openapi.client.api.disp"/>
       <SystemRequirements Version=">=2020.1" Interoperability="enabled" />
     </Module>
   </Document>
