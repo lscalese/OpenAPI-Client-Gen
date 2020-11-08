@@ -71,7 +71,7 @@ Apply and start the production.
 Great!  Our production is ready.  
 Let's create data.
 
-### Create Pet
+### Add Pet
 
 The generated production include REST api provided for proxy usage.  
 The rest class is petshop.REST for this sample and the webapplication is automatically generated at compile time.
@@ -88,6 +88,7 @@ curl --location --request POST 'http://localhost:52795/petshoprest/pet' \
     "id": 0,
     "name": "string"
   },
+  "id" : 456789,
   "name": "Kitty_Gallor",
   "photoUrls": [
     "string"
@@ -102,13 +103,21 @@ curl --location --request POST 'http://localhost:52795/petshoprest/pet' \
 }'
 ```
 
-**Or you can upload an image :**  
+### Upload an image
 ```
-curl --location --request POST 'http://localhost:52795/petshoprest/pet/12345/uploadImage' \
+curl --location --request POST 'http://localhost:52795/petshoprest/pet/456789/uploadImage' \
 --form 'file=@/home/lorenzo/Pictures/call.jpg' \
 --form 'additionalMetadata=tag1'
 ```
 to adapt with your own image path.  
+
+### Delete pet
+
+```
+curl --location --request DELETE 'http://localhost:52795/petshoprest/pet/456789' \
+--header 'Accept: application/json' \
+--header 'api-key: special-key'
+```
 
 Now you can check your production and the message viewer.
 
@@ -116,6 +125,13 @@ Now you can check your production and the message viewer.
 
 Also you can analyze all messages with visual trace.  
 <img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Visual-Trace-2.png">
+
+**SQL Query to show GenericResponse records :**
+```
+select ID, httpStatusCode, operation, operationStatusText, SUBSTRING(body,1)
+from petshop.GenericResponse
+order by id desc
+```
 
 ## Code snippet
 

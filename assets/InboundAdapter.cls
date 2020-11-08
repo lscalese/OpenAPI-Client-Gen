@@ -29,10 +29,13 @@ Method OnTask() As %Status
 
             $$$ThrowOnError(..BusinessHost.ProcessInput(pet))
 
+            ;Set m = ##class(dc.openapi.client.samples.InputFile).add()
+            ;$$$ThrowOnError(..BusinessHost.ProcessInput(m))
+
             Set pet.state = "IP"
             $$$ThrowOnError(pet.%Save())
         }
-
+        
     } Catch (ex) {
         Do ex.Log()
         Set sc = ex.AsStatus()

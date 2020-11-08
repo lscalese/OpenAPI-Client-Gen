@@ -1,3 +1,4 @@
-SELECT ID, petName, categoryName, categoryId 
-FROM dc_openapi_client_samples.InputPet
-WHERE state = 'N'
+
+select ID, httpStatusCode, operation, operationStatusText, SUBSTRING(body,1)
+from petshop.GenericResponse
+order by id desc

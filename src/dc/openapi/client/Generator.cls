@@ -98,9 +98,7 @@ Method generateEnsembleClasses() As %SYSTEM.Status
             }
         
         }
-        ;Set ..tmp("RQPARAMETERS", $Zcvt(%zCurrentData("method"),"U"), serviceDefinition.operationId, in, parameterName) = propertyName
-        ;<Route Url="/launchProcess/:processName" Method="POST" Call="launchProcess"/>
-
+        
         Do ..UrlMap.Data.WriteLine("</Routes>")
         
         
@@ -244,13 +242,19 @@ Method restProxyMethod(serviceDefinition As %Library.DynamicObject) As %Status
             Set mDef.FormalSpec = mDef.FormalSpec_","_parameterName_":%String"
         } ElseIf (in = "header") &&(parameterName'="accept") {    
             Set line = "Set ensRequest.%1 = $Get(%request.CgiEnvs(""%2""))"
-            Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText(line, propertyName, parameterName))
+            Set convertedParameterName = "HTTP_" _ $Zconvert($Translate(parameterName, "-", "_"), "U")
+            Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText(line, propertyName, convertedParameterName))
 
         } ElseIf in = "formData" {
-            Set line = "set mime = %request.GetMimeData(""%1"")"
-            Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText(line, parameterName))
-            Set line = "If $Isobject(mime) { Do ensRequest.%1.CopyFrom(mime) } Else {} " ; MayBe missing something here.
-            Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText(line, propertyName))
+            If paramType = "%Stream.GlobalBinary" {
+                Set line = "set mime = %request.GetMimeData(""%1"")"
+                Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText(line, parameterName))
+                Set line = "Do:$Isobject(mime) ensRequest.%1.CopyFrom(mime)"
+                Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText(line, propertyName))
+            } Else {
+                Set line = "Set ensRequest.%1 = $Get(%request.Data(""%2"",1))"
+                Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText(line, propertyName, parameterName))
+            }
             
         } ElseIf in = "body" {
             Set line = "Do ensRequest.%1.CopyFrom(%request.Content)"
@@ -478,6 +482,7 @@ Method ensGenericResponse() As %Status
     Set cDef.Super = "%Persistent,Ens.Response"
     Set cDef.Inheritance = "left"
 
+    #dim property As %Dictionary.PropertyDefinition
     Set property = ##class(%Dictionary.PropertyDefinition).%New()
     Set property.Name = "httpStatusCode"
     Set property.Type = "%Integer"
@@ -487,6 +492,8 @@ Method ensGenericResponse() As %Status
     Set property.Name = "headers"
     Set property.Type = "%String"
     Set property.Collection = "array"
+    Do property.Parameters.SetAt(128, "MAXLEN")
+    Do property.Parameters.SetAt(1, "TRUNCATE")
     Do cDef.Properties.Insert(property)
 
     Set property = ##class(%Dictionary.PropertyDefinition).%New()
@@ -496,12 +503,17 @@ Method ensGenericResponse() As %Status
 
     Set property = ##class(%Dictionary.PropertyDefinition).%New()
     Set property.Name = "operation"
-    Set property.Type = "%Stream.GlobalBinary"
+    Set property.Type = "%String"
+    Do property.Parameters.SetAt(128, "MAXLEN")
+    Do property.Parameters.SetAt(1, "TRUNCATE")
     Do cDef.Properties.Insert(property)
 
     Set property = ##class(%Dictionary.PropertyDefinition).%New()
     Set property.Name = "operationStatusText"
     Set property.Type = "%String"
+    Do property.Parameters.SetAt(128, "MAXLEN")
+    Do property.Parameters.SetAt(1, "TRUNCATE")
+    
     Do cDef.Properties.Insert(property)
     
     $$$ThrowOnError(cDef.%Save())
