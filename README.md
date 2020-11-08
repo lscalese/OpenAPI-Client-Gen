@@ -28,7 +28,7 @@ Take a look on these generated classes:
 
 * **Business service classes**  
 BusinessService classes are suffixed by "Service".  There is a Business Service for each request defined in the specification document.  
-The generated classes are templates which should be edited with your need.  In this sample we edit petshop.addPetService at the next step.  
+The generated classes are templates which should be edited with your need.    
 
 * **Ens.Request classes**  
 For each request defined, an Ens.Request class is generated suffixed by "Request".  
@@ -53,68 +53,18 @@ A method "genericProcessResponse" is called after each request, feel free to edi
 A pre-configured production is also generated named pakagename.Production (petshop.Production in this sample).  
 All Business Services are disabled by default.  
 
-### Prepare the BusinessService class
-
-Export class petshop.addPetService to your projet.  
-
-<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/PetShop-ExportClasses.png">
-
-Edit the petshop.addPetService class to use our [dc.openapi.client.samples.InboundAdapter](https://github.com/lscalese/OpenAPI-Client-Gen/blob/master/src/dc/openapi/client/samples/InboundAdapter.cls#L1) ready for our sample.  
-
-Replace : 
-```
-/// Auto generated : Change by your Adapter type.
-Parameter ADAPTER = "Ens.Adapter";
-
-/// Auto generated : Change by your Adapter type.
-Property Adapter As Ens.Adapter;
-
-```
-
-By:
-```
-Parameter ADAPTER = "dc.openapi.client.samples.InboundAdapter";
-
-Property Adapter As dc.openapi.client.samples.InboundAdapter;
-```
-
-After that, we implement the OnProcessInput method.  
-```
-Method OnProcessInput(pInput As dc.openapi.client.samples.InputPet, pOutput As %RegisteredObject) As %Status
-{
-	Set msg = ##class(petshop.addPetRequest).%New()
-	Set msg.accept = "application/json"
-	Set msg.consume = "application/json"
-	Set body = {
-		"category": {
-			"id": (pInput.categoryId),
-			"name": (pInput.categoryName)
-		},
-		"name": (pInput.petName),
-		"photoUrls": [
-			"https://blog.nordnet.com/wp-content/uploads/2018/08/lolcat-working-problem.png"
-		],
-		"tags": [
-			{
-			"id": 0,
-			"name": "string"
-			}
-		],
-		"status": "available"
-	}
-	Do msg.bodybody.Write(body.%ToJSON()) ; To implement
-	Return ..SendRequestAsync("petshop.Process", msg)
-}
-```
+* **Rest Proxy application**  
+Usefull for testing from an http client tools.  
+We use curl command line in this sample.  
 
 ### Configure a production
 
 Open the [production page](http://localhost:52795/csp/irisapp/EnsPortal.ProductionConfig.zen) and open petshop.Production.  
 This is an auto generated production.  
-<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Production-Open.png">
+<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Production-Open-1.png">
 
-Enable petshop.addPetService .  
-<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/PetService-Enabled.png">
+Enable petshop.ProxyService.  
+<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/ProxyService-1.png">
 
 Apply and start the production.  
 
@@ -123,18 +73,49 @@ Let's create data.
 
 ### Create Pet
 
-To generate input data, call this method in a terminal:
+The generated production include REST api provided for proxy usage.  
+The rest class is petshop.REST for this sample and the webapplication is automatically generated at compile time.
+There is a projection to create this if does not exists.  
 
+To generate input data, we use curl command line.  
+
+**Add a pet to Petstore :**  
 ```
-Do ##class(dc.openapi.client.samples.PetShop).addPet()
+curl --location --request POST 'http://localhost:52795/petshoprest/pet' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+  "category": {
+    "id": 0,
+    "name": "string"
+  },
+  "name": "Kitty_Gallor",
+  "photoUrls": [
+    "string"
+  ],
+  "tags": [
+    {
+      "id": 0,
+      "name": "string"
+    }
+  ],
+  "status": "available"
+}'
 ```
+
+**Or you can upload an image :**  
+```
+curl --location --request POST 'http://localhost:52795/petshoprest/pet/12345/uploadImage' \
+--form 'file=@/home/lorenzo/Pictures/call.jpg' \
+--form 'additionalMetadata=tag1'
+```
+to adapt with your own image path.  
 
 Now you can check your production and the message viewer.
 
-<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Production-MessageViewer.png">
+<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Production-MessageViewer-2.png">
 
 Also you can analyze all messages with visual trace.  
-<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Visual-Trace.png">
+<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Visual-Trace-2.png">
 
 ## Code snippet
 
@@ -177,12 +158,13 @@ You can easily test it with swagger-ui tools:
 * Explore : http://localhost:52795/swaggerclientgen/api/_spec
 * Select schemes http.  
 * In the body parameter, put your swagger 2.0 on json format or an url to download the json file.
+* Click execute and then download.  
 
 <img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Swagger-ui-1.png">
 
-* click execute and then download
+Or use the basic embedded form at : http://localhost:52795/csp/swaggerclientgen/dc.openapi.client.api.cspdemo.cls
 
-<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Swagger-ui-2.png">
+<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/basic-form.png">
 
 ## Prerequisites
 Make sure you have [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) and [Docker desktop](https://www.docker.com/products/docker-desktop) installed.
