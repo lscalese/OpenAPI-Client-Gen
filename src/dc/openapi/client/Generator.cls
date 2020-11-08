@@ -19,6 +19,8 @@ Property ensGenericResponseClassName As %String [ Private ];
 
 Property ensProcessClassName As %String [ Private ];
 
+Property UrlMap As %Dictionary.XDataDefinition [ InitialExpression = {##class(%Dictionary.XDataDefinition).%New()} ];
+
 /// To avoid erasing existing code, the generator don't overwrite existing classes.  These classes are skiped.<br/>
 /// For generator testing\development purpose, It could be usefull to erase existing classes<br/>
 /// Set to true if you wish this behavior or set %zOverwriteIfExist=1 in your process\terminal.
@@ -65,8 +67,16 @@ Method generateEnsembleClasses() As %SYSTEM.Status
         Set ..ensGenericResponseClassName = ..application _ ".GenericResponse" 
         Set ..ensProcessClassName = ..application _ ".Process" 
 
+
+        Set ..UrlMap = ##class(%Dictionary.XDataDefinition).%New()
+        Set ..UrlMap.Name = "UrlMap"
+        Set ..UrlMap.XMLNamespace = "http://www.intersystems.com/urlmap"
+        Do ..UrlMap.Data.WriteLine("<Routes>")
+
         $$$ThrowOnError(..ensGenericResponse())
         $$$ThrowOnError(..ensOperationClass())
+        $$$ThrowOnError(..restProxy())
+
 
         Set iter = ..spec.paths.%GetIterator()
         While iter.%GetNext(.serviceLocation , .value ) {
@@ -82,14 +92,26 @@ Method generateEnsembleClasses() As %SYSTEM.Status
                 $$$ThrowOnError(..ensServiceClass(serviceDefinition))
                 $$$ThrowOnError(..ensOperationMethod(serviceDefinition))
                 
+                Set routeUrl = $Translate(serviceLocation, "{}", ":")
+                Do ..UrlMap.Data.WriteLine($$$FormatText("<Route Url=""%1"" Method=""%2"" Call=""%3""/>", routeUrl, $Zcvt(method,"U"), $Zcvt(method,"U")_serviceDefinition.operationId))
+                $$$ThrowOnError(..restProxyMethod(serviceDefinition))
             }
         
         }
+        ;Set ..tmp("RQPARAMETERS", $Zcvt(%zCurrentData("method"),"U"), serviceDefinition.operationId, in, parameterName) = propertyName
+        ;<Route Url="/launchProcess/:processName" Method="POST" Call="launchProcess"/>
+
+        Do ..UrlMap.Data.WriteLine("</Routes>")
         
+        
+        $$$ThrowOnError(..ensProxyService())
         $$$ThrowOnError(..messageMap())
         $$$ThrowOnError(..ensProcessClass())
         $$$ThrowOnError(..ensProduction())
         
+        
+        $$$ThrowOnError(..restProxyURLMAP())
+       
         If ..compile {
             Set sc = $system.OBJ.Compile(..ensOperationClassName ,"ck")
         }
@@ -97,6 +119,167 @@ Method generateEnsembleClasses() As %SYSTEM.Status
         Set sc = ex.AsStatus()
     }
 
+    Return sc
+}
+
+Method restProxy() As %Status
+{
+    #dim sc As %Status = $$$OK
+    Set restClassname = ..application _ ".REST"
+    ;Set ..tmp("SERVICES",restClassname)=""
+    
+    #dim cDef As %Dictionary.ClassDefinition
+    If ##class(%Dictionary.ClassDefinition).%ExistsId(restClassname) {
+       Return $$$OK
+    } Else {
+        Set cDef = ##class(%Dictionary.ClassDefinition).%New(restClassname)
+    }
+
+    Set utilsClass =..application_".Utils"
+    If '$Data(^oddDEF(utilsClass)) {
+        Merge ^oddDEF(utilsClass) = ^oddDEF("dc.openapi.client.Utils")
+        Set ^oddDEF(utilsClass, 1) = ..application_".Utils"
+        $$$ThrowOnError($SYSTEM.OBJ.Compile(utilsClass,"ck"))
+    }
+
+    Set projectionClassName = ..application _ ".Projection"
+    #dim projectionClass As %Dictionary.ClassDefinition = ##class(%Dictionary.ClassDefinition).%New(projectionClassName)
+    Set projectionClass.Super = "%Projection.AbstractProjection"
+
+
+    Set cDef.Super = "%CSP.REST"
+    Set cDef.Inheritance = "left"
+
+    #dim projection As %Dictionary.ProjectionDefinition = ##class(%Dictionary.ProjectionDefinition).%New()
+    Set projection.Name = "WebApp"
+    Set projection.Type = projectionClassName
+    Do cDef.Projections.Insert(projection)
+
+    #dim mDef As %Dictionary.MethodDefinition = ##class(%Dictionary.MethodDefinition).%New()
+    Set mDef.Name = "CreateProjection"
+    Set mDef.FormalSpec = "cls:%String,&params"
+    Set mDef.ClassMethod = 1
+    Do mDef.Implementation.WriteLine($c(9)_ "Return ..%CreateWebApplication()")
+    Set mDef.ReturnType = "%Status"
+    Do projectionClass.Methods.Insert(mDef)
+
+    Set mDef = ##class(%Dictionary.MethodDefinition).%New()
+    Set mDef.Name = "RemoveProjection"
+    Set mDef.FormalSpec = "cls:%String,&params,recompile:%Boolean"
+    Set mDef.ClassMethod = 1
+    Do mDef.Implementation.WriteLine($c(9)_ "Return $$$OK")
+    Set mDef.ReturnType = "%Status"
+    Do projectionClass.Methods.Insert(mDef)
+
+    Set mDef = ##class(%Dictionary.MethodDefinition).%New()
+    Set mDef.Name = "%CreateWebApplication"
+
+    Set restAppName = "/"_$zcvt($tr(..application,"."),"l")_"rest"
+    Do mDef.Implementation.WriteLine($Char(9)_"Set oldNs = $namespace")
+    Do mDef.Implementation.WriteLine($Char(9)_"Zn ""%SYS""")
+    Do mDef.Implementation.WriteLine($Char(9)_"if ##class(Security.Applications).Exists("""_restAppName_""") { Zn oldNs  Return $$$OK }" )
+    Do mDef.Implementation.WriteLine($Char(9)_"write ""Create web application ..."",!")
+    Do mDef.Implementation.WriteLine($Char(9)_"set webName = """_restAppName_"""")
+    Do mDef.Implementation.WriteLine($Char(9)_"set webProperties(""NameSpace"") = oldNs")
+    Do mDef.Implementation.WriteLine($Char(9)_"set webProperties(""Enabled"") = 1")
+    Do mDef.Implementation.WriteLine($Char(9)_"set webProperties(""CSPZENEnabled"") = 1")
+    Do mDef.Implementation.WriteLine($Char(9)_"set webProperties(""AutheEnabled"") = 64")
+    Do mDef.Implementation.WriteLine($Char(9)_"set webProperties(""iKnowEnabled"") = 1")
+    Do mDef.Implementation.WriteLine($Char(9)_"set webProperties(""DeepSeeEnabled"") = 1")
+    Do mDef.Implementation.WriteLine($Char(9)_"Set webProperties(""DispatchClass"")="""_restClassname_"""")
+    Do mDef.Implementation.WriteLine($Char(9)_"Set webProperties(""MatchRoles"")="":%DB_IRISAPP""")
+    Do mDef.Implementation.WriteLine($Char(9)_"set sc = ##class(Security.Applications).Create(webName, .webProperties)")
+    Do mDef.Implementation.WriteLine($Char(9)_"write !,""Web application creation status "", $SYSTEM.Status.GetOneErrorText(sc),! ")
+    Do mDef.Implementation.WriteLine($Char(9)_"Zn oldNs")
+    Do mDef.Implementation.WriteLine($Char(9)_"Return $$$OK")
+   
+    Set mDef.ClassMethod = 1
+    Do projectionClass.Methods.Insert(mDef)
+    
+    $$$ThrowOnError(projectionClass.%Save())
+    If ..compile {
+        $$$ThrowOnError($SYSTEM.OBJ.Compile(projectionClassName,"ck"))
+    }
+
+    
+    Return cDef.%Save()
+}
+
+Method restProxyMethod(serviceDefinition As %Library.DynamicObject) As %Status
+{
+    Set sc = $$$OK
+    Set ensRequestClassName = ..application _ "." _ serviceDefinition.operationId _ "Request"
+    Set utilsClass =..application_".Utils"
+    Set pList = $lfs(..tmp("ensRequest", ensRequestClassName, "REQUESTPARAMLOCATION"),","), ptr = 0
+    
+    Set restClassname = ..application _ ".REST"
+    Set cDef = ##class(%Dictionary.ClassDefinition).%OpenId(restClassname)
+
+    Set mDef = ##class(%Dictionary.MethodDefinition).%New()
+    Set mDef.Name = $Zcvt(%zCurrentData("method"),"U")_serviceDefinition.operationId
+    Set mDef.Description = $Replace(serviceDefinition.description, $$$NL, "<br/>"_$$$NL)
+    Set mDef.FormalSpec = ""
+    Set mDef.ReturnType = "%Status"
+    Set mDef.ClassMethod = 1
+
+    Do mDef.Implementation.WriteLine($Char(9)_$Replace("Set ensRequest = ##class(%1).%New()", "%1", ensRequestClassName))
+    Do mDef.Implementation.WriteLine($Char(9)_"Set ensRequest.consume = %request.ContentType")
+    Do mDef.Implementation.WriteLine($Char(9)_"Set ensRequest.accept = $Get(%request.CgiEnvs(""HTTP_ACCEPT""),""*/*"")")
+    
+
+    While $Listnext(pList, ptr, propertyInfo) {            
+
+        Set propertyName = $Piece(propertyInfo, ":", 1)
+        Set in = $Piece(propertyInfo, ":", 2)
+        Set parameterName = $Piece(propertyInfo, ":", 3)
+        Set paramType = $Piece(propertyInfo, ":", 4)
+
+
+        If in = "query" {
+            Set line = "Set ensRequest.%1 = $Get(%request.Data(""%2"",1))"
+            Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText(line, propertyName, parameterName))
+        } ElseIf in = "path" {
+            Set line = "Set ensRequest.%1 = %2"
+            Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText(line, propertyName, parameterName))
+            Set mDef.FormalSpec = mDef.FormalSpec_","_parameterName_":%String"
+        } ElseIf (in = "header") &&(parameterName'="accept") {    
+            Set line = "Set ensRequest.%1 = $Get(%request.CgiEnvs(""%2""))"
+            Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText(line, propertyName, parameterName))
+
+        } ElseIf in = "formData" {
+            Set line = "set mime = %request.GetMimeData(""%1"")"
+            Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText(line, parameterName))
+            Set line = "If $Isobject(mime) { Do ensRequest.%1.CopyFrom(mime) } Else {} " ; MayBe missing something here.
+            Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText(line, propertyName))
+            
+        } ElseIf in = "body" {
+            Set line = "Do ensRequest.%1.CopyFrom(%request.Content)"
+            Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText(line, propertyName))
+        }
+
+
+       
+    }
+    Set mDef.FormalSpec = $Extract(mDef.FormalSpec, 2, *)
+    
+
+    Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText("Return ##class(%1).invokeHostAsync(""%2"", ensRequest, ""%3"")", utilsClass, ..ensProcessClassName, ..application_".ProxyService"))
+
+    Do cDef.Methods.Insert(mDef)
+
+    Return cDef.%Save()
+}
+
+Method restProxyURLMAP(serviceDefinition As %Library.DynamicObject) As %Status
+{
+    Set sc = $$$OK, restClassname =..application _ ".REST"
+    Set cDef = ##class(%Dictionary.ClassDefinition).%OpenId(..application _ ".REST")
+    Set cDef.Super = "%CSP.REST"
+    Do cDef.XDatas.Insert(..UrlMap)
+    $$$ThrowOnError(cDef.%Save())
+    If ..compile {
+        Set sc = $system.OBJ.Compile(restClassname,"ck")
+    }
     Return sc
 }
 
@@ -141,6 +324,8 @@ Method ensOperationMethod(serviceDefinition As %Library.DynamicObject) As %Statu
         Set in = $Piece(propertyInfo, ":", 2)
         Set parameterName = $Piece(propertyInfo, ":", 3)
         Set paramType = $Piece(propertyInfo, ":", 4)
+
+        Set ..tmp("RQPARAMETERS", $Zcvt(%zCurrentData("method"),"U"), serviceDefinition.operationId, in, parameterName) = propertyName
 
         If in = "query" {
             Do mDef.Implementation.WriteLine($Char(9) _ "Do pHttpRequestIn.SetParam(""" _ parameterName _ """, pRequest." _ propertyName _")")
@@ -325,6 +510,30 @@ Method ensGenericResponse() As %Status
         Set sc = $SYSTEM.OBJ.Compile(genericResponseClassName,"ck")
     }
 
+    Return sc
+}
+
+Method ensProxyService() As %Status
+{
+    #dim sc As %Status = $$$OK
+    
+    Set serviceClassName = ..application _ ".ProxyService"
+    Set ..tmp("SERVICES",serviceClassName)=""
+    
+    If $Data(^oddDEF(serviceClassName)) && '..overwriteIfExist {
+        Write:..debug !,serviceClassName, " already exists, class skipped"
+        Return $$$OK
+    } Else {
+        Kill ^oddDEF(serviceClassName)
+    }
+    Set cDef = ##class(%Dictionary.ClassDefinition).%New(serviceClassName)
+    Set cDef.Super = "Ens.BusinessService"
+
+    $$$TOE(sc, cDef.%Save())
+    If ..compile {
+        Set sc = $system.OBJ.Compile(serviceClassName,"ck")
+    }
+    
     Return sc
 }
 
@@ -662,141 +871,4 @@ XData ProductionDefinitionTemplate
 </Production>
 }
 
-/*
-Method generateSimpleClient() As %Status
-{
-    Set sc = $$$OK
-
-    Set clientClass = ..application _ ".client"
-    Kill ^oddDEF(clientClass)
-    ;Do $system.OBJ.Delete(clientClass, "-d")
-
-    Set cDef=##class(%Dictionary.ClassDefinition).%New(clientClass)
-    Set cDef.Super = "dc.openapi.client.Abstract"
-    Set cDef.ProcedureBlock=1
-    
-    Set server = ..createClassParameter("SERVER", $Piece(..spec.host,":"))
-    $$$TOE(sc, cDef.Parameters.Insert(server))
-
-    Set port = ..createClassParameter("PORT", $Piece(..spec.host, ":", 2))
-    $$$TOE(sc, cDef.Parameters.Insert(port))
-
-    Set basePath = ..createClassParameter("BASEPATH", ..spec.basePath)
-    $$$TOE(sc, cDef.Parameters.Insert(basePath))
-
-    If $Isobject(..spec.info) {
-        Set cDef.Description = ..spec.info.title _ $$$NL _ "<br/>" 
-                                _ "Version: " _ ..spec.info.version _ $$$NL _ "<br/>" 
-                                _ $Replace(..spec.info.description, $$$NL, $$$NL_"<br/>")
-    }
-
-    Set iter = ..spec.paths.%GetIterator()
-    While iter.%GetNext(.serviceLocation , .value ) {
-        
-
-        Set methodIter = value.%GetIterator()
-        While methodIter.%GetNext(.method , .serviceDefinition ) {
-            
-            Set mDef = ##class(%Dictionary.MethodDefinition).%New()
-            Set mDef.Name = serviceDefinition.operationId
-            
-            Set mDef.Description = $Replace(serviceDefinition.description, $$$NL, "<br/>"_$$$NL)
-            
-            Set code = $Char(9) _ "Do ..clean()"
-            Do mDef.Implementation.WriteLine(code)
-
-
-            Set producesObject = ""
-            Set acceptDefault = ""
-            If serviceDefinition.produces '= "" {
-                Set producesObject = serviceDefinition.produces
-            } ElseIf ..spec.produces '= "" {
-                Set producesObject = ..spec.produces
-            }
-
-            If producesObject '="" {
-                Set producesList = $lfs($Translate(producesObject.%ToJSON(), "[]""",""),","), ptr = 0
-                Set mDef.Description =  mDef.Description _ "<br/><br/>" _ $$$NL _ "accept : <ul>" _ $$$NL
-                While $Listnext(producesList,ptr,acc) {
-                    Set:acceptDefault="" acceptDefault = acc
-                    Set mDef.Description =  mDef.Description _"<li>"_acc_"</li>" _ $$$NL
-                }
-
-                Set mDef.Description =  mDef.Description _"</ul>"
-
-            }
-            Set mDef.FormalSpec="accept:%String=""" _ acceptDefault _""""
-            
-            Set code = $Char(9) _ "Do:accept'="""" ..setParameter(""accept"",""header"",""string"",accept)"
-            Do mDef.Implementation.WriteLine(code)
-
-
-            Set consumesObject = serviceDefinition.consumes
-            Set consumeDefault = ""
-            If consumesObject '= "" {
-                Set consumesList = $lfs($Translate(consumesObject.%ToJSON(), "[]""",""),","), ptr = 0
-                Set mDef.Description =  mDef.Description _ "<br/><br/>" _ $$$NL _ "consume : <ul>" _ $$$NL
-                While $Listnext(consumesList,ptr,mimeP) {
-                    Set:consumeDefault="" consumeDefault = mimeP
-                    Set mDef.Description =  mDef.Description _"<li>"_mimeP_"</li>" _ $$$NL
-                }
-
-                Set mDef.Description =  mDef.Description _"</ul>"
-            }
-
-            Set mDef.FormalSpec=mDef.FormalSpec _ ",consume:%String="""_consumeDefault_""""
-
-            Set parametersObject = ""
-            
-            If serviceDefinition.parameters '= "" {
-                Set parametersObject = serviceDefinition.parameters
-            } ElseIf value.parameters '= "" {
-                Set parametersObject = value.parameters
-            }
-
-            Set code = $Char(9) _ "Set:consume'="""" ..request.ContentType = consume"
-            Do mDef.Implementation.WriteLine(code)
-
-            If parametersObject '= "" {
-                Set iterParam = parametersObject.%GetIterator()
-                
-                While iterParam.%GetNext(.keyParam, .parameter) {
-
-                    Set parameterMethodName = parameter.in _ $Tr(parameter.name, "_", "")
-                    Set mDef.FormalSpec = mDef.FormalSpec _ "," _ parameterMethodName _ ":"_..getObjectScriptType(parameter.type, parameter.in)
-                    
-                    Set code = $Char(9) _ "Do:$Data("_parameterMethodName_") ..setParameter("""_parameter.name_""","""_parameter.in_""","""_parameter.type_""","_parameterMethodName_")"
-                    Do mDef.Implementation.WriteLine(code)
-
-                    Set:parameter.description'="" mDef.Description =  mDef.Description  _"<br/>" _ $$$NL _ parameterMethodName _ ": " _ $Replace(parameter.description, $$$NL, "<br/>" _ $$$NL ) _ " (required : "_$Select(parameter.required:"true",1:"false") _ ")"
-                
-                }
-                Set keyParam = ""
-            }
-            ;w !,mDef.FormalSpec,!
-            Set mDef.Description = mDef.Description  _"<br/>" _ $$$NL _ ..getResponseDoc(serviceDefinition.responses)
-
-            Set code = $Char(9) _ "$$$TOE(sc, ..prepare())"
-            Do mDef.Implementation.WriteLine(code)
-
-            Set upperMethod = $zcvt(method, "U")
-            Set code = $Char(9) _ "$$$TOE(sc,..request.Send("""_upperMethod_""", ..addPathParam(..basePath_"""_serviceLocation _""")))"
-            Do mDef.Implementation.WriteLine(code)
-            
-            Set code = $Char(9) _ "Return ..getResponseObject()"
-            Do mDef.Implementation.WriteLine(code)
-
-            Set mDef.ReturnType = "dc.openapi.client.Response"
-
-            Do cDef.Methods.Insert(mDef)
-        }
-        Set method = ""
-    }
-
-    $$$TOE(sc, cDef.%Save())
-    $$$TOE(sc, $system.OBJ.Compile(clientClass,"ck"))
-
-    Return sc
-}
-*/
 }
