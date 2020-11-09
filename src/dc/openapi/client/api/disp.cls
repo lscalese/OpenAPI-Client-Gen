@@ -44,7 +44,6 @@ ClassMethod InteropClasses(pappName As %String) As %Status
 /// OpenAPI spec 2.0
 ClassMethod SwaggerSpec() As %Status
 {
-    s ^lsc("sw")=$zdt($h,3,1)
     Try {
         Do ##class(%REST.Impl).%SetContentType("application/json")
         If '##class(%REST.Impl).%CheckAccepts("application/json") Do ##class(%REST.Impl).%ReportRESTError(..#HTTP406NOTACCEPTABLE,$$$ERROR($$$RESTBadAccepts)) Quit
