@@ -5,7 +5,10 @@ Instead of existing tools, this application generates client production.
 
 It could be used as tool to create production on your local instance or to be hosted.  
 If this application is hosted, a REST api is available to upload the specification document and download the generated classes.  
-  
+
+All generated classes are ABSOLUTELY NOT linked in any way with the generator.  
+Your free to edit anything to adapt it with your need.  
+Consider the generated Production client as a template ready to use.  
   
 ## Production Sample
 
@@ -61,17 +64,14 @@ We use curl command line in this sample.
 
 ### Configure a production  
 
-Open the [production page](http://localhost:52795/csp/irisapp/EnsPortal.ProductionConfig.zen) and open petshop.Production.  
-This is an auto generated production.  
+Open and start petshop.Productino from [production page](http://localhost:52795/csp/irisapp/EnsPortal.ProductionConfig.zen).    
+This is the auto generated production.  
 <img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Production-Open-1.png">
 
-Enable petshop.ProxyService.  
 <img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/ProxyService-1.png">
 
-Apply and start the production.  
-
 Great!  Our production is ready.  
-Let's create data.
+Let's push input data.
 
 ### Add Pet
 
@@ -143,7 +143,7 @@ In short :
 * The /petshoprest is invoked and create an instance of petshop.addPetRequest (this is an Ens.Request subclass).  
 * The rest process invoke Business Process (petshop.Process) using petshop.ProxyService.  
 * petshop.Process send the request to the Business Operation (petshop.Operation).  
-* petshop.Operation create a related http request related to the received Ens.Request instance and fill a petshop.GenericResponse.  
+* petshop.Operation create an http request related to the received Ens.Request instance and fill a petshop.GenericResponse.  
 * petshop.Process receive the response.  
 
 
