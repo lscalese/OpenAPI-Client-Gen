@@ -1,15 +1,16 @@
 ## OPENAPI Client Gen
 
-This is an application to generate Iris interoperability production from a Swagger 2.0 specification document.  
-It can be used as tool to create classes on your local instance or to be hosted.  
+This is an application to generate an Iris interoperability production from a Swagger 2.0 specification document.  
+Instead of existing tools, this application generates client production.
+
+It could be used as tool to create production on your local instance or to be hosted.  
 If this application is hosted, a REST api is available to upload the specification document and download the generated classes.  
   
   
 ## Production Sample
 
-In this sample we generate a production for [petshop Swagger 2.0 API](https://petstore.swagger.io/) REST Api  
+In this sample we generate a production client for [petshop Swagger 2.0 API](https://petstore.swagger.io/) REST Api  
 from the [specification 2.0](https://petstore.swagger.io/v2/swagger.json).  
-After that we prepare the BusinessService class from a generated template, generate input data and observes the result.  
 
 ### Generate interoperatibility classes
 
@@ -28,12 +29,13 @@ Take a look on these generated classes:
 
 * **Business service classes**  
 BusinessService classes are suffixed by "Service".  There is a Business Service for each request defined in the specification document.  
-The generated classes are templates which should be edited with your need.    
+The generated classes are templates which should be edited with your need.  
+
 
 * **Ens.Request classes**  
 For each request defined, an Ens.Request class is generated suffixed by "Request".  
-This class represent all of parameters (query parameters, path, body, headers).  
-The Business operation will consume an instance of this class to generate http request.  
+This class represent all of parameters (query parameters, path, body, headers, formdata).  
+The Business operation will consume an instance of this class to generate a related http request.  
 
 * **GenericResponse class**  
 The Ens.Response generated subclass is named "package.GenericResponse" (petshop.GenericResponse in this sample).  
@@ -45,7 +47,7 @@ This is a basic implementation that redirect all messages to the Business Operat
 
 * **Business Operation class**  
 Probably the most usefull generated class in this project.  
-It contain a method for each request and build a %Net.HttpRequest instance from the Ens.Request subclass.
+It contain a method for each request and build a %Net.HttpRequest instance from the Ens.Request subclass.  
 A message map XDATA is also generated to call automatically the related method for the received message.  
 A method "genericProcessResponse" is called after each request, feel free to edit with your need.  
 
@@ -54,10 +56,10 @@ A pre-configured production is also generated named pakagename.Production (petsh
 All Business Services are disabled by default.  
 
 * **Rest Proxy application**  
-Usefull for testing from an http client tools.  
+Usefull for testing from an http client tools (petshop.REST class).  
 We use curl command line in this sample.  
 
-### Configure a production
+### Configure a production  
 
 Open the [production page](http://localhost:52795/csp/irisapp/EnsPortal.ProductionConfig.zen) and open petshop.Production.  
 This is an auto generated production.  
@@ -74,8 +76,8 @@ Let's create data.
 ### Add Pet
 
 The generated production include REST api provided for proxy usage.  
-The rest class is petshop.REST for this sample and the webapplication is automatically generated at compile time.
-There is a projection to create this if does not exists.  
+The rest class is petshop.REST for this sample.  
+The web application is automatically configured at compile time (using a Projection).
 
 To generate input data, we use curl command line.  
 
@@ -132,6 +134,18 @@ select ID, httpStatusCode, operation, operationStatusText, SUBSTRING(body,1)
 from petshop.GenericResponse
 order by id desc
 ```
+
+### How It works
+
+What happened when you add a pet with the curl command?  
+In short : 
+
+* The /petshoprest is invoked and create an instance of petshop.addPetRequest (this is an Ens.Request subclass).  
+* The rest process invoke Business Process (petshop.Process) using petshop.ProxyService.  
+* petshop.Process send the request to the Business Operation (petshop.Operation).  
+* petshop.Operation create a related http request related to the received Ens.Request instance and fill a petshop.GenericResponse.  
+* petshop.Process receive the response.  
+
 
 ## Code snippet
 
