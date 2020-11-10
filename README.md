@@ -77,7 +77,7 @@ We use curl command line in this sample.
 | petshop.addPetRequest | Ens.Request for addPet |
 | petshop.addPetService | addPet Business Service template |
 | petshop.createUserRequest | Ens.Request for createUser |
-| petshop.createUserService |  createUser Business Service template|
+| petshop.createUserService | createUser Business Service template |
 | petshop.createUsersWithArrayInputRequest | Ens.Request for createUsersWithArrayInput |
 | petshop.createUsersWithArrayInputService | reateUsersWithArrayInput Business Service template |
 | petshop.createUsersWithListInputRequest | Ens.Request for createUsersWithListInput |
@@ -145,7 +145,7 @@ curl --location --request POST 'http://localhost:52795/petshoprest/pet' \
     "name": "string"
   },
   "id" : 456789,
-  "name": "Kitty_Gallor",
+  "name": "Kitty_Galore",
   "photoUrls": [
     "string"
   ],
