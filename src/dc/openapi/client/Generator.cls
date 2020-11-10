@@ -366,7 +366,8 @@ Method ensOperationMethod(serviceDefinition As %Library.DynamicObject) As %Statu
     Do mDef.Implementation.WriteLine($Char(9) _"Set pURL = """ _ ..spec.basePath _ %zCurrentData("ServiceLocation") _"""")
     Set pList = $lfs(..tmp("ensRequest", ensRequestClassName, "REQUESTPARAMLOCATION"),","), ptr = 0
     Set mParts = $$$NO
-    Do mDef.Implementation.WriteLine($Char(9) _ "Set pHttpRequestIn = ##class(%Net.HttpRequest).%New()")
+    ;Do mDef.Implementation.WriteLine($Char(9) _ "Set pHttpRequestIn = ##class(%Net.HttpRequest).%New()")
+    Do mDef.Implementation.WriteLine($Char(9) _ "Set pHttpRequestIn = ..GetRequest(pRequest)")
     Do mDef.Implementation.WriteLine($Char(9) _ "Set pHttpRequestIn.ContentType = pRequest.consume")
     While $Listnext(pList, ptr, propertyInfo) {
         
@@ -381,7 +382,7 @@ Method ensOperationMethod(serviceDefinition As %Library.DynamicObject) As %Statu
             Do mDef.Implementation.WriteLine($Char(9) _ "Do pHttpRequestIn.SetParam(""" _ parameterName _ """, pRequest." _ propertyName _")")
         } ElseIf in = "path" {
             Do mDef.Implementation.WriteLine($Char(9) _ "Set pURL = $Replace(pURL, ""{"_parameterName_"}"", pRequest." _ propertyName _ ")" )
-        } ElseIf in = "header" {
+        } ElseIf (in = "header") && (parameterName'="accept") {
             Do mDef.Implementation.WriteLine($Char(9) _ "Do pHttpRequestIn.SetHeader(""" _ parameterName _ """, pRequest." _ propertyName _")")
         } ElseIf in = "formData" {
             Do mDef.Implementation.WriteLine($Char(9) _ "If pHttpRequestIn.ContentType = ""multipart/form-data"" {")
@@ -505,6 +506,17 @@ Method ensOperationClass() As %Status [ Private ]
     Do mDef.Implementation.WriteLine($Char(9) _"Return sc")
     
     Do cDef.Methods.Insert(mDef)
+
+    Set mDef = ##class(%Dictionary.MethodDefinition).%New()
+    Set mDef.Name = "GetRequest"
+    Set mDef.FormalSpec = $$$FormatText("pRequest:%1","Ens.Request")
+    Set mDef.ReturnType = "%Net.HttpRequest"
+
+    Do mDef.Implementation.WriteLine($Char(9) _"#dim pHttpRequestIn As %Net.HttpRequest = ##class(%Net.HttpRequest).%New()")
+    Do mDef.Implementation.WriteLine($Char(9) _"Do:##class(%Dictionary.CompiledProperty).%ExistsId(pRequest.%ClassName(1)_""||accept"") pHttpRequestIn.SetHeader(""accept"", pRequest.accept)")
+    Do mDef.Implementation.WriteLine($Char(9) _"Return pHttpRequestIn")
+    Do cDef.Methods.Insert(mDef)
+
     Set sc = cDef.%Save()
 
 	Return sc
