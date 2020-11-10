@@ -333,7 +333,7 @@ Method ensOperationMethod(serviceDefinition As %Library.DynamicObject) As %Statu
     #dim mDef As %Dictionary.MethodDefinition = ##class(%Dictionary.MethodDefinition).%New()
     Set mDef.Name = methodName
     Set mDef.Description = $Replace(serviceDefinition.description, $$$NL, "<br/>"_$$$NL)
-    Set mDef.FormalSpec = $$$FormatText("pRequest:%1,pResponse:%2", ensRequestClassName, "Ens.Response")
+    Set mDef.FormalSpec = $$$FormatText("pRequest:%1,pResponse:%2", ensRequestClassName, ..ensGenericResponseClassName)
     Set mDef.ReturnType = "%Status"
     
     
