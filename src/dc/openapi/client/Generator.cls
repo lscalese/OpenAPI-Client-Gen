@@ -174,9 +174,11 @@ Method restProxy() As %Status [ Private ]
         Set mDef.Name = "%CreateWebApplication"
 
         Set restAppName = "/"_$zcvt($tr(..application,"."),"l")_"rest"
+        Do mDef.Implementation.WriteLine($Char(9)_"New $namespace")
         Do mDef.Implementation.WriteLine($Char(9)_"Set oldNs = $namespace")
-        Do mDef.Implementation.WriteLine($Char(9)_"Zn ""%SYS""")
-        Do mDef.Implementation.WriteLine($Char(9)_"if ##class(Security.Applications).Exists("""_restAppName_""") { Zn oldNs  Return $$$OK }" )
+        ;Do mDef.Implementation.WriteLine($Char(9)_"Zn ""%SYS""")
+        Do mDef.Implementation.WriteLine($Char(9)_"Set $namespace = ""%SYS""")
+        Do mDef.Implementation.WriteLine($Char(9)_"if ##class(Security.Applications).Exists("""_restAppName_""") { Quit $$$OK }" )
         Do mDef.Implementation.WriteLine($Char(9)_"write ""Create web application ..."",!")
         Do mDef.Implementation.WriteLine($Char(9)_"set webName = """_restAppName_"""")
         Do mDef.Implementation.WriteLine($Char(9)_"set webProperties(""NameSpace"") = oldNs")
@@ -189,8 +191,8 @@ Method restProxy() As %Status [ Private ]
         Do mDef.Implementation.WriteLine($Char(9)_"Set webProperties(""MatchRoles"")="":%DB_IRISAPP""")
         Do mDef.Implementation.WriteLine($Char(9)_"set sc = ##class(Security.Applications).Create(webName, .webProperties)")
         Do mDef.Implementation.WriteLine($Char(9)_"write !,""Web application creation status "", $SYSTEM.Status.GetOneErrorText(sc),! ")
-        Do mDef.Implementation.WriteLine($Char(9)_"Zn oldNs")
-        Do mDef.Implementation.WriteLine($Char(9)_"Return $$$OK")
+        ;Do mDef.Implementation.WriteLine($Char(9)_"Zn oldNs")
+        Do mDef.Implementation.WriteLine($Char(9)_"Quit $$$OK")
     
         Set mDef.ClassMethod = 1
         Do projectionClass.Methods.Insert(mDef)
