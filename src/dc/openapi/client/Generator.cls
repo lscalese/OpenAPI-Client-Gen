@@ -19,7 +19,11 @@ Property ensGenericResponseClassName As %String [ Private ];
 
 Property ensProcessClassName As %String [ Private ];
 
-Property UrlMap As %Dictionary.XDataDefinition [ InitialExpression = {##class(%Dictionary.XDataDefinition).%New()} ];
+Property ensProxyServiceClassName As %String [ Private ];
+
+Property restClassName As %String [ Private ];
+
+Property UrlMap As %Dictionary.XDataDefinition [ InitialExpression = {##class(%Dictionary.XDataDefinition).%New()}, Private ];
 
 /// To avoid erasing existing code, the generator don't overwrite existing classes.  These classes are skiped.<br/>
 /// For generator testing\development purpose, It could be usefull to erase existing classes<br/>
@@ -58,15 +62,16 @@ ClassMethod packageExists(packageName As %String) As %Boolean
     Return ''packageList.Find($zcvt(packageName, "U"))
 }
 
-Method generateEnsembleClasses() As %SYSTEM.Status
+Method generateEnsembleClasses() As %Status
 {
-    Set sc = $$$OK
+    #dim sc As %Status = $$$OK
     
     Try {
         Set ..ensOperationClassName = ..application _ ".Operation" 
         Set ..ensGenericResponseClassName = ..application _ ".GenericResponse" 
         Set ..ensProcessClassName = ..application _ ".Process" 
-
+        Set ..ensProxyServiceClassName = ..application _ ".ProxyService"
+        Set ..restClassName = ..application _ ".REST"
 
         Set ..UrlMap = ##class(%Dictionary.XDataDefinition).%New()
         Set ..UrlMap.Name = "UrlMap"
@@ -78,7 +83,11 @@ Method generateEnsembleClasses() As %SYSTEM.Status
         $$$ThrowOnError(..restProxy())
 
 
-        Set iter = ..spec.paths.%GetIterator()
+        #dim iter As %Iterator.AbstractIterator = ..spec.paths.%GetIterator()
+        #dim serviceLocation As %String
+        #dim serviceDefinition As %Library.DynamicObject
+        #dim method As %String
+
         While iter.%GetNext(.serviceLocation , .value ) {
 
             Set %zCurrentData("ServiceLocation") = serviceLocation
@@ -114,17 +123,17 @@ Method generateEnsembleClasses() As %SYSTEM.Status
             Set sc = $system.OBJ.Compile(..ensOperationClassName ,"ck")
         }
     } Catch(ex) {
+        #dim ex As %Exception.AbstractException
         Set sc = ex.AsStatus()
     }
 
     Return sc
 }
 
-Method restProxy() As %Status
+Method restProxy() As %Status [ Private ]
 {
     #dim sc As %Status = $$$OK
-    Set restClassname = ..application _ ".REST"
-    ;Set ..tmp("SERVICES",restClassname)=""
+    Set restClassname = ..restClassName
     
     #dim cDef As %Dictionary.ClassDefinition
     If ##class(%Dictionary.ClassDefinition).%ExistsId(restClassname) {
@@ -141,8 +150,57 @@ Method restProxy() As %Status
     }
 
     Set projectionClassName = ..application _ ".Projection"
-    #dim projectionClass As %Dictionary.ClassDefinition = ##class(%Dictionary.ClassDefinition).%New(projectionClassName)
-    Set projectionClass.Super = "%Projection.AbstractProjection"
+    
+    If ' ##class(%Dictionary.ClassDefinition).%ExistsId(projectionClassName) {
+        #dim projectionClass As %Dictionary.ClassDefinition = ##class(%Dictionary.ClassDefinition).%New(projectionClassName)
+        Set projectionClass.Super = "%Projection.AbstractProjection"
+        #dim mDef As %Dictionary.MethodDefinition = ##class(%Dictionary.MethodDefinition).%New()
+        Set mDef.Name = "CreateProjection"
+        Set mDef.FormalSpec = "cls:%String,&params"
+        Set mDef.ClassMethod = 1
+        Do mDef.Implementation.WriteLine($c(9)_ "Return ..%CreateWebApplication()")
+        Set mDef.ReturnType = "%Status"
+        Do projectionClass.Methods.Insert(mDef)
+
+        Set mDef = ##class(%Dictionary.MethodDefinition).%New()
+        Set mDef.Name = "RemoveProjection"
+        Set mDef.FormalSpec = "cls:%String,&params,recompile:%Boolean"
+        Set mDef.ClassMethod = 1
+        Do mDef.Implementation.WriteLine($c(9)_ "Return $$$OK")
+        Set mDef.ReturnType = "%Status"
+        Do projectionClass.Methods.Insert(mDef)
+
+        Set mDef = ##class(%Dictionary.MethodDefinition).%New()
+        Set mDef.Name = "%CreateWebApplication"
+
+        Set restAppName = "/"_$zcvt($tr(..application,"."),"l")_"rest"
+        Do mDef.Implementation.WriteLine($Char(9)_"Set oldNs = $namespace")
+        Do mDef.Implementation.WriteLine($Char(9)_"Zn ""%SYS""")
+        Do mDef.Implementation.WriteLine($Char(9)_"if ##class(Security.Applications).Exists("""_restAppName_""") { Zn oldNs  Return $$$OK }" )
+        Do mDef.Implementation.WriteLine($Char(9)_"write ""Create web application ..."",!")
+        Do mDef.Implementation.WriteLine($Char(9)_"set webName = """_restAppName_"""")
+        Do mDef.Implementation.WriteLine($Char(9)_"set webProperties(""NameSpace"") = oldNs")
+        Do mDef.Implementation.WriteLine($Char(9)_"set webProperties(""Enabled"") = 1")
+        Do mDef.Implementation.WriteLine($Char(9)_"set webProperties(""CSPZENEnabled"") = 1")
+        Do mDef.Implementation.WriteLine($Char(9)_"set webProperties(""AutheEnabled"") = 64")
+        Do mDef.Implementation.WriteLine($Char(9)_"set webProperties(""iKnowEnabled"") = 1")
+        Do mDef.Implementation.WriteLine($Char(9)_"set webProperties(""DeepSeeEnabled"") = 1")
+        Do mDef.Implementation.WriteLine($Char(9)_"Set webProperties(""DispatchClass"")="""_restClassname_"""")
+        Do mDef.Implementation.WriteLine($Char(9)_"Set webProperties(""MatchRoles"")="":%DB_IRISAPP""")
+        Do mDef.Implementation.WriteLine($Char(9)_"set sc = ##class(Security.Applications).Create(webName, .webProperties)")
+        Do mDef.Implementation.WriteLine($Char(9)_"write !,""Web application creation status "", $SYSTEM.Status.GetOneErrorText(sc),! ")
+        Do mDef.Implementation.WriteLine($Char(9)_"Zn oldNs")
+        Do mDef.Implementation.WriteLine($Char(9)_"Return $$$OK")
+    
+        Set mDef.ClassMethod = 1
+        Do projectionClass.Methods.Insert(mDef)
+        
+        $$$ThrowOnError(projectionClass.%Save())
+        If ..compile {
+            $$$ThrowOnError($SYSTEM.OBJ.Compile(projectionClassName,"ck"))
+        }
+    }
+    
 
 
     Set cDef.Super = "%CSP.REST"
@@ -153,68 +211,28 @@ Method restProxy() As %Status
     Set projection.Type = projectionClassName
     Do cDef.Projections.Insert(projection)
 
-    #dim mDef As %Dictionary.MethodDefinition = ##class(%Dictionary.MethodDefinition).%New()
-    Set mDef.Name = "CreateProjection"
-    Set mDef.FormalSpec = "cls:%String,&params"
-    Set mDef.ClassMethod = 1
-    Do mDef.Implementation.WriteLine($c(9)_ "Return ..%CreateWebApplication()")
-    Set mDef.ReturnType = "%Status"
-    Do projectionClass.Methods.Insert(mDef)
-
-    Set mDef = ##class(%Dictionary.MethodDefinition).%New()
-    Set mDef.Name = "RemoveProjection"
-    Set mDef.FormalSpec = "cls:%String,&params,recompile:%Boolean"
-    Set mDef.ClassMethod = 1
-    Do mDef.Implementation.WriteLine($c(9)_ "Return $$$OK")
-    Set mDef.ReturnType = "%Status"
-    Do projectionClass.Methods.Insert(mDef)
-
-    Set mDef = ##class(%Dictionary.MethodDefinition).%New()
-    Set mDef.Name = "%CreateWebApplication"
-
-    Set restAppName = "/"_$zcvt($tr(..application,"."),"l")_"rest"
-    Do mDef.Implementation.WriteLine($Char(9)_"Set oldNs = $namespace")
-    Do mDef.Implementation.WriteLine($Char(9)_"Zn ""%SYS""")
-    Do mDef.Implementation.WriteLine($Char(9)_"if ##class(Security.Applications).Exists("""_restAppName_""") { Zn oldNs  Return $$$OK }" )
-    Do mDef.Implementation.WriteLine($Char(9)_"write ""Create web application ..."",!")
-    Do mDef.Implementation.WriteLine($Char(9)_"set webName = """_restAppName_"""")
-    Do mDef.Implementation.WriteLine($Char(9)_"set webProperties(""NameSpace"") = oldNs")
-    Do mDef.Implementation.WriteLine($Char(9)_"set webProperties(""Enabled"") = 1")
-    Do mDef.Implementation.WriteLine($Char(9)_"set webProperties(""CSPZENEnabled"") = 1")
-    Do mDef.Implementation.WriteLine($Char(9)_"set webProperties(""AutheEnabled"") = 64")
-    Do mDef.Implementation.WriteLine($Char(9)_"set webProperties(""iKnowEnabled"") = 1")
-    Do mDef.Implementation.WriteLine($Char(9)_"set webProperties(""DeepSeeEnabled"") = 1")
-    Do mDef.Implementation.WriteLine($Char(9)_"Set webProperties(""DispatchClass"")="""_restClassname_"""")
-    Do mDef.Implementation.WriteLine($Char(9)_"Set webProperties(""MatchRoles"")="":%DB_IRISAPP""")
-    Do mDef.Implementation.WriteLine($Char(9)_"set sc = ##class(Security.Applications).Create(webName, .webProperties)")
-    Do mDef.Implementation.WriteLine($Char(9)_"write !,""Web application creation status "", $SYSTEM.Status.GetOneErrorText(sc),! ")
-    Do mDef.Implementation.WriteLine($Char(9)_"Zn oldNs")
-    Do mDef.Implementation.WriteLine($Char(9)_"Return $$$OK")
-   
-    Set mDef.ClassMethod = 1
-    Do projectionClass.Methods.Insert(mDef)
-    
-    $$$ThrowOnError(projectionClass.%Save())
-    If ..compile {
-        $$$ThrowOnError($SYSTEM.OBJ.Compile(projectionClassName,"ck"))
-    }
-
     
     Return cDef.%Save()
 }
 
-Method restProxyMethod(serviceDefinition As %Library.DynamicObject) As %Status
+Method restProxyMethod(serviceDefinition As %Library.DynamicObject) As %Status [ Private ]
 {
-    Set sc = $$$OK
-    Set ensRequestClassName = ..application _ "." _ serviceDefinition.operationId _ "Request"
-    Set utilsClass =..application_".Utils"
-    Set pList = $lfs(..tmp("ensRequest", ensRequestClassName, "REQUESTPARAMLOCATION"),","), ptr = 0
+    #dim sc As %Status = $$$OK
+    #dim ensRequestClassName As %String = ..application _ "." _ serviceDefinition.operationId _ "Request"
+    #dim utilsClass As %String =..application_".Utils"
+    #dim pList As %List = $lfs(..tmp("ensRequest", ensRequestClassName, "REQUESTPARAMLOCATION"),",")
+    #dim ptr As %Integer = 0
+    #dim restClassname As %String = ..restClassName
+    #dim cDef As %Dictionary.ClassDefinition = ##class(%Dictionary.ClassDefinition).%OpenId(restClassname)
+    #dim mDef As %Dictionary.MethodDefinition = ##class(%Dictionary.MethodDefinition).%New()
     
-    Set restClassname = ..application _ ".REST"
-    Set cDef = ##class(%Dictionary.ClassDefinition).%OpenId(restClassname)
+    Set methodName = $Zcvt(%zCurrentData("method"),"U")_serviceDefinition.operationId
 
-    Set mDef = ##class(%Dictionary.MethodDefinition).%New()
-    Set mDef.Name = $Zcvt(%zCurrentData("method"),"U")_serviceDefinition.operationId
+    If ##class(%Dictionary.MethodDefinition).%ExistsId(restClassname_"||"_methodName) {
+        Return sc
+    }
+
+    Set mDef.Name = methodName
     Set mDef.Description = $Replace(serviceDefinition.description, $$$NL, "<br/>"_$$$NL)
     Set mDef.FormalSpec = ""
     Set mDef.ReturnType = "%Status"
@@ -224,7 +242,11 @@ Method restProxyMethod(serviceDefinition As %Library.DynamicObject) As %Status
     Do mDef.Implementation.WriteLine($Char(9)_"Set ensRequest.consume = %request.ContentType")
     Do mDef.Implementation.WriteLine($Char(9)_"Set ensRequest.accept = $Get(%request.CgiEnvs(""HTTP_ACCEPT""),""*/*"")")
     
-
+    #dim propertyName As %String
+    #dim in As %String
+    #dim parameterName As %String
+    #dim paramType As %String
+    
     While $Listnext(pList, ptr, propertyInfo) {            
 
         Set propertyName = $Piece(propertyInfo, ":", 1)
@@ -260,14 +282,11 @@ Method restProxyMethod(serviceDefinition As %Library.DynamicObject) As %Status
             Set line = "Do ensRequest.%1.CopyFrom(%request.Content)"
             Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText(line, propertyName))
         }
-
-
-       
     }
     Set mDef.FormalSpec = $Extract(mDef.FormalSpec, 2, *)
     
-
-    Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText("Return ##class(%1).invokeHostAsync(""%2"", ensRequest, ""%3"")", utilsClass, ..ensProcessClassName, ..application_".ProxyService"))
+    
+    Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText("Return ##class(%1).invokeHostAsync(""%2"", ensRequest, ""%3"")", utilsClass, ..ensProcessClassName, ..ensProxyServiceClassName))
 
     Do cDef.Methods.Insert(mDef)
 
@@ -276,8 +295,12 @@ Method restProxyMethod(serviceDefinition As %Library.DynamicObject) As %Status
 
 Method restProxyURLMAP(serviceDefinition As %Library.DynamicObject) As %Status
 {
-    Set sc = $$$OK, restClassname =..application _ ".REST"
-    Set cDef = ##class(%Dictionary.ClassDefinition).%OpenId(..application _ ".REST")
+    #dim sc As %Status = $$$OK
+    #dim restClassname As %String = ..restClassName
+    #dim cDef As %Dictionary.ClassDefinition = ##class(%Dictionary.ClassDefinition).%OpenId(..restClassName)
+    
+    Do ##class(dc.openapi.client.Spec).%RemoveXDataBlock(cDef, "UrlMap")
+    
     Set cDef.Super = "%CSP.REST"
     Do cDef.XDatas.Insert(..UrlMap)
     $$$ThrowOnError(cDef.%Save())
@@ -289,28 +312,23 @@ Method restProxyURLMAP(serviceDefinition As %Library.DynamicObject) As %Status
 
 Method ensOperationMethod(serviceDefinition As %Library.DynamicObject) As %Status
 {
-    Set sc = $$$OK
+    #dim sc As %Status = $$$OK
+    #dim methodName As %String = $Zcvt(%zCurrentData("method"),"U")_serviceDefinition.operationId
+    #dim ensOperationClassName As %String = ..ensOperationClassName
 
-    Set methodName = $Zcvt(%zCurrentData("method"),"U")_serviceDefinition.operationId
-    Set ensOperationClassName = ..ensOperationClassName
-
-    If ##class(%Dictionary.MethodDefinition).%ExistsId(ensOperationClassName_"||"_methodName) {
-        If '..overwriteIfExist {
-            Write:..debug !,"Method ", methodName, " already exists, Method skipped"
-        } Else {
-            Do ##class(%Dictionary.MethodDefinition).%DeleteId(ensOperationClassName_"||"_methodName)
-        }
+    #dim ensRequestClassName As %String = ..application _ "." _ serviceDefinition.operationId _ "Request"
+    Set ..tmp("MessageMap","MessageType", ensRequestClassName) = methodName
+    
+    If ##class(%Dictionary.MethodDefinition).%ExistsId(ensOperationClassName _ "||" _ methodName) {
+        Write:..debug !,"skipped ",methodName, " method already exists."
+        Return $$$OK
     }
     
-    Set cDef = ##class(%Dictionary.ClassDefinition).%OpenId(ensOperationClassName,,.sc)
+    #dim cDef As %Dictionary.ClassDefinition = ##class(%Dictionary.ClassDefinition).%OpenId(ensOperationClassName,,.sc)
     Return:$$$ISERR(sc) sc
 
-    Set ensRequestClassName = ..application _ "." _ serviceDefinition.operationId _ "Request"
-
     
-    Set ..tmp("MessageMap","MessageType", ensRequestClassName) = methodName
-
-    Set mDef = ##class(%Dictionary.MethodDefinition).%New()
+    #dim mDef As %Dictionary.MethodDefinition = ##class(%Dictionary.MethodDefinition).%New()
     Set mDef.Name = methodName
     Set mDef.Description = $Replace(serviceDefinition.description, $$$NL, "<br/>"_$$$NL)
     Set mDef.FormalSpec = $$$FormatText("pRequest:%1,pResponse:%2", ensRequestClassName, "Ens.Response")
@@ -421,11 +439,14 @@ Method ensOperationClass() As %Status [ Private ]
 {
     Set sc = $$$OK
     Set ensOperationClassName = ..ensOperationClassName
-    If $Data(^oddDEF(ensOperationClassName)) && '..overwriteIfExist {
-        Write:..debug !,ensOperationClassName, " already exists, class skipped"
-        Return $$$OK
-    } Else {
-        Kill ^oddDEF(ensOperationClassName)
+
+    If $Data(^oddDEF(ensOperationClassName)) {
+        If ..overwriteIfExist {
+            Kill ^oddDEF(ensOperationClassName)
+        } Else {
+            Write:..debug !,ensOperationClassName, " already exists, class skipped"
+            Return $$$OK
+        }
     }
 
     Set cDef = ##class(%Dictionary.ClassDefinition).%New(ensOperationClassName)
@@ -471,11 +492,13 @@ Method ensGenericResponse() As %Status
     Set sc = $$$OK
     Set genericResponseClassName = ..ensGenericResponseClassName
 
-    If $Data(^oddDEF(genericResponseClassName)) && '..overwriteIfExist {
-        Write !,genericResponseClassName, " already exists, class skipped"
-        Return $$$OK
-    } Else {
-        Kill ^oddDEF(genericResponseClassName)
+    If $Data(^oddDEF(genericResponseClassName)) {
+        If ..overwriteIfExist {
+            Kill ^oddDEF(genericResponseClassName)
+        } Else {
+            Write:..debug !,genericResponseClassName, " already exists, class skipped"
+            Return $$$OK
+        }
     }
 
     Set cDef = ##class(%Dictionary.ClassDefinition).%New(genericResponseClassName)
@@ -528,17 +551,19 @@ Method ensGenericResponse() As %Status
 Method ensProxyService() As %Status
 {
     #dim sc As %Status = $$$OK
-    
-    Set serviceClassName = ..application _ ".ProxyService"
+    #dim serviceClassName As %String = ..ensProxyServiceClassName
     Set ..tmp("SERVICES",serviceClassName)=""
     
-    If $Data(^oddDEF(serviceClassName)) && '..overwriteIfExist {
-        Write:..debug !,serviceClassName, " already exists, class skipped"
-        Return $$$OK
-    } Else {
-        Kill ^oddDEF(serviceClassName)
+    If $Data(^oddDEF(serviceClassName)) {
+        If ..overwriteIfExist {
+            Kill ^oddDEF(serviceClassName)
+        } Else {
+            Write:..debug !,serviceClassName, " already exists, class skipped"
+            Return $$$OK
+        }
     }
-    Set cDef = ##class(%Dictionary.ClassDefinition).%New(serviceClassName)
+    
+    #dim cDef As %Dictionary.ClassDefinition = ##class(%Dictionary.ClassDefinition).%New(serviceClassName)
     Set cDef.Super = "Ens.BusinessService"
 
     $$$TOE(sc, cDef.%Save())
@@ -557,14 +582,14 @@ Method ensServiceClass(serviceDefinition As %Library.DynamicObject) As %Status [
     
     Set ..tmp("SERVICES",serviceClassName)=""
 
-    If $Data(^oddDEF(serviceClassName)) && '..overwriteIfExist {
-        Write:..debug !,serviceClassName, " already exists, class skipped"
-        Return $$$OK
-    } Else {
-        Kill ^oddDEF(serviceClassName)
+    If $Data(^oddDEF(serviceClassName)) {
+        If ..overwriteIfExist {
+            Kill ^oddDEF(serviceClassName)
+        } Else {
+            Write:..debug !,serviceClassName, " already exists, class skipped"
+            Return $$$OK
+        }
     }
-
-    
 
     Set ensRequestClassName = ..application _ "." _ serviceDefinition.operationId _ "Request"
     Set ensOperationClassName = ..ensOperationClassName
@@ -631,12 +656,30 @@ Method ensRequestClass(serviceDefinition As %Library.DynamicObject, value As %Li
     Set sc = $$$OK
     Set className = ..application _ "." _ serviceDefinition.operationId _ "Request"
     
-
-    If $Data(^oddDEF(className)) && '..overwriteIfExist {
-        Write:..debug !,className, " already exists, class skipped"
-        Return $$$OK
-    } Else {
-        Kill ^oddDEF(className)
+    If $Data(^oddDEF(className)) {
+        If ..overwriteIfExist {
+            Kill ^oddDEF(className)
+        } Else {
+            //////
+            Set requestParamLocation =  "accept:header:accept:%String"
+            Set parametersObject = $Select(serviceDefinition.parameters'="":serviceDefinition.parameters, value.parameters'="":value.parameters,1:"")
+            If parametersObject '= "" {
+                Set iterParam = parametersObject.%GetIterator()
+                
+                While iterParam.%GetNext(.keyParam, .parameter) {
+                    Set property = ##class(%Dictionary.PropertyDefinition).%New()
+                    Set pName = parameter.in _ $Tr(parameter.name, "_", "")
+                    Set pType = ..getObjectScriptType(parameter.type, parameter.in)
+                    Set property.Required = parameter.required
+                    Set requestParamLocation = requestParamLocation _ "," _ pName _ ":" _ parameter.in _ ":" _ parameter.name _ ":" _ pType
+                }
+                Set keyParam = ""
+            }
+            Set ..tmp("ensRequest", className, "REQUESTPARAMLOCATION") = requestParamLocation
+            /////
+            Write:..debug !,className, " already exists, class skipped"
+            Return $$$OK
+        }
     }
 
     Set cDef = ##class(%Dictionary.ClassDefinition).%New(className)
@@ -738,11 +781,13 @@ Method ensProcessClass() As %Status
 {
     Set sc = $$$OK
     
-    If $Data(^oddDEF(..ensProcessClassName)) && '..overwriteIfExist {
-        Write:..debug !,..ensProcessClassName, " already exists, class skipped"
-        Return $$$OK
-    } Else {
-        Kill ^oddDEF(..ensProcessClassName)
+    If $Data(^oddDEF(..ensProcessClassName)) {
+        If ..overwriteIfExist {
+            Kill ^oddDEF(..ensProcessClassName)
+        } Else {
+            Write:..debug !,..ensProcessClassName, " already exists, class skipped"
+            Return $$$OK
+        }
     }
 
     Set cDef = ##class(%Dictionary.ClassDefinition).%New(..ensProcessClassName)
@@ -813,20 +858,25 @@ Method ensProduction() As %Status
     Set sc = $$$OK
     Set productionClassName = ..application_".Production"
 
-    If $Data(^oddDEF(productionClassName)) && '..overwriteIfExist {
-        Write:..debug !,productionClassName, " already exists, class skipped"
-        Return $$$OK
-    } Else {
-        Kill ^oddDEF(productionClassName)
+    If $Data(^oddDEF(productionClassName)) {
+        If ..overwriteIfExist {
+            Kill ^oddDEF(productionClassName)
+        } Else {
+            Write:..debug !,productionClassName, " already exists, class skipped"
+            Return $$$OK
+        }
     }
 
-    Set strServiceTemplate = "<Item Name=""{className}"" Category="""" ClassName=""{className}"" PoolSize=""1"" Enabled=""false"" Foreground=""false"" Comment="""" LogTraceEvents=""false"" Schedule=""""></Item>"
+    
+
+    Set strServiceTemplate = "<Item Name=""{className}"" Category="""" ClassName=""{className}"" PoolSize=""1"" Enabled=""{enabled}"" Foreground=""false"" Comment="""" LogTraceEvents=""false"" Schedule=""""></Item>"
 
     Set className = ""
     For  {
         Set className = $Order(..tmp("SERVICES",className))
         Quit:className=""
-        Set service($Increment(service)) = $Replace(strServiceTemplate, "{className}", className)
+        Set enabled = $Select(className = ..ensProxyServiceClassName: "true", 1: "false")
+        Set service($Increment(service)) = $Replace($Replace(strServiceTemplate, "{className}", className), "{enabled}", enabled)
     }
     
     Set xData=##class(%Dictionary.XDataDefinition).%New()

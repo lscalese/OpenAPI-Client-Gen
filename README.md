@@ -28,7 +28,7 @@ The first argument is the package name where the classes will be generated and t
 Also the [method](https://github.com/lscalese/OpenAPI-Client-Gen/blob/master/src/dc/openapi/client/Spec.cls#L11) accept a filename or a dynamic object.  
 
 
-Take a look on these generated classes: 
+Take a look on these generated classes:  
 
 * **Business service classes**  
 BusinessService classes are suffixed by "Service".  There is a Business Service for each request defined in the specification document.  
@@ -61,10 +61,64 @@ All Business Services are disabled by default.
 * **Rest Proxy application**  
 Usefull for testing from an http client tools (petshop.REST class).  
 We use curl command line in this sample.  
-
+  
+  
+| Generated Classes | Description |
+| --- | --- |
+| petshop.GenericResponse | Generic Ens.Response |
+| petshop.Operation | Business Operation |
+| petshop.Process | Business Process |
+| petshop.Production | Production configuration |
+| petshop.Projection | Projection to create CSP proxy Rest web application at compile time |
+| petshop.ProxyService | Empty Business Service used by proxy web application |
+| petshop.REST | %CSP.REST class for proxy web application |
+| petshop.spec | Swagger specification used by the generator |
+| petshop.Utils | utils... |
+| petshop.addPetRequest | Ens.Request for addPet |
+| petshop.addPetService | addPet Business Service template |
+| petshop.createUserRequest | Ens.Request for createUser |
+| petshop.createUserService |  createUser Business Service template|
+| petshop.createUsersWithArrayInputRequest | Ens.Request for createUsersWithArrayInput |
+| petshop.createUsersWithArrayInputService | reateUsersWithArrayInput Business Service template |
+| petshop.createUsersWithListInputRequest | Ens.Request for createUsersWithListInput |
+| petshop.createUsersWithListInputService | createUsersWithListInput Business Service template |
+| petshop.deleteOrderRequest | Ens.Request for deleteOrder |
+| petshop.deleteOrderService | deleteOrder Business Service template|
+| petshop.deletePetRequest | Ens.Request for deletePet |
+| petshop.deletePetService | deletePet Business Service template|
+| petshop.deleteUserRequest | Ens.Request for deleteUser |
+| petshop.deleteUserService | deleteUser Business Service template |
+| petshop.findPetsByStatusRequest | Ens.Request for findPetsByStatus |
+| petshop.findPetsByStatusService | findPetsByStatus Business Service template |
+| petshop.findPetsByTagsRequest | Ens.Request for findPetsByTags |
+| petshop.findPetsByTagsService | findPetsByTags Business Service template |
+| petshop.getInventoryRequest | Ens.Request for getInventory |
+| petshop.getInventoryService | getInventory Business Service template |
+| petshop.getOrderByIdRequest | Ens.Request for getOrderById |
+| petshop.getOrderByIdService | getOrderById Business Service template |
+| petshop.getPetByIdRequest | Ens.Request for getPetById |
+| petshop.getPetByIdService | getPetById Business Service template|
+| petshop.getUserByNameRequest | Ens.Request for getUserByName |
+| petshop.getUserByNameService | getUserByName Business Service template|
+| petshop.loginUserRequest | Ens.Request for loginUser |
+| petshop.loginUserService | loginUser Business Service template |
+| petshop.logoutUserRequest | Ens.Request for logoutUser |
+| petshop.logoutUserService | logoutUser Business Service template |
+| petshop.placeOrderRequest | Ens.Request for placeOrder |
+| petshop.placeOrderService | placeOrder Business Service template |
+| petshop.updatePetRequest | Ens.Request for updatePet |
+| petshop.updatePetService | updatePet Business Service template |
+| petshop.updatePetWithFormRequest | Ens.Request for updatePetWithForm |
+| petshop.updatePetWithFormService | updatePetWithForm Business Service template |
+| petshop.updateUserRequest | Ens.Request for updateUser |
+| petshop.updateUserService | updateUser Business Service template |
+| petshop.uploadFileRequest | Ens.Request for uploadFile |
+| petshop.uploadFileService | uploadFile Business Service template |
+  
+  
 ### Configure a production  
 
-Open and start petshop.Productino from [production page](http://localhost:52795/csp/irisapp/EnsPortal.ProductionConfig.zen).    
+Open and start petshop.Production from [production page](http://localhost:52795/csp/irisapp/EnsPortal.ProductionConfig.zen).    
 This is the auto generated production.  
 <img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Production-Open-1.png">
 
