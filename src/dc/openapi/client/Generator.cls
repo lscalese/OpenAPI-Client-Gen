@@ -23,6 +23,18 @@ Property ensProxyServiceClassName As %String [ Private ];
 
 Property restClassName As %String [ Private ];
 
+Property packageRequest As %String [ Private ];
+
+Property packageBusinessServices As %String [ Private ];
+
+Property packageBusinessOperations As %String [ Private ];
+
+Property packageBusinessProcesses As %String [ Private ];
+
+Property packageRest As %String [ Private ];
+
+Property packageModel As %String [ Private ];
+
 Property UrlMap As %Dictionary.XDataDefinition [ InitialExpression = {##class(%Dictionary.XDataDefinition).%New()}, Private ];
 
 /// To avoid erasing existing code, the generator don't overwrite existing classes.  These classes are skiped.<br/>
@@ -62,16 +74,30 @@ ClassMethod packageExists(packageName As %String) As %Boolean
     Return ''packageList.Find($zcvt(packageName, "U"))
 }
 
+Method prepare() As %Status
+{
+    Set ..packageRequest = ..application _ ".msg"
+    Set ..packageBusinessServices = ..application _ ".bs"
+    Set ..packageBusinessOperations = ..application _ ".bo"
+    Set ..packageBusinessProcesses = ..application _ ".bp"
+    Set ..packageRest = ..application _ ".rest"
+    Set ..packageModel = ..application _ ".model"
+
+    Set ..ensOperationClassName = ..packageBusinessOperations _ ".Operation" 
+    Set ..ensGenericResponseClassName = ..packageRequest _ ".GenericResponse" 
+    Set ..ensProcessClassName = ..packageBusinessProcesses _ ".Process" 
+    Set ..ensProxyServiceClassName = ..packageBusinessServices _ ".ProxyService"
+    Set ..restClassName = ..packageRest _ ".REST"
+
+    Return $$$OK
+}
+
 Method generateEnsembleClasses() As %Status
 {
     #dim sc As %Status = $$$OK
     
     Try {
-        Set ..ensOperationClassName = ..application _ ".Operation" 
-        Set ..ensGenericResponseClassName = ..application _ ".GenericResponse" 
-        Set ..ensProcessClassName = ..application _ ".Process" 
-        Set ..ensProxyServiceClassName = ..application _ ".ProxyService"
-        Set ..restClassName = ..application _ ".REST"
+        Do ..prepare()
 
         Set ..UrlMap = ##class(%Dictionary.XDataDefinition).%New()
         Set ..UrlMap.Name = "UrlMap"
@@ -149,7 +175,7 @@ Method restProxy() As %Status [ Private ]
         $$$ThrowOnError($SYSTEM.OBJ.Compile(utilsClass,"ck"))
     }
 
-    Set projectionClassName = ..application _ ".Projection"
+    Set projectionClassName = ..packageRest _ ".Projection"
     
     If ' ##class(%Dictionary.ClassDefinition).%ExistsId(projectionClassName) {
         #dim projectionClass As %Dictionary.ClassDefinition = ##class(%Dictionary.ClassDefinition).%New(projectionClassName)
@@ -220,7 +246,7 @@ Method restProxy() As %Status [ Private ]
 Method restProxyMethod(serviceDefinition As %Library.DynamicObject) As %Status [ Private ]
 {
     #dim sc As %Status = $$$OK
-    #dim ensRequestClassName As %String = ..application _ "." _ serviceDefinition.operationId _ "Request"
+    #dim ensRequestClassName As %String = ..packageRequest _ "." _ serviceDefinition.operationId _ "Request"
     #dim utilsClass As %String =..application_".Utils"
     #dim pList As %List = $lfs(..tmp("ensRequest", ensRequestClassName, "REQUESTPARAMLOCATION"),",")
     #dim ptr As %Integer = 0
@@ -318,7 +344,7 @@ Method ensOperationMethod(serviceDefinition As %Library.DynamicObject) As %Statu
     #dim methodName As %String = $Zcvt(%zCurrentData("method"),"U")_serviceDefinition.operationId
     #dim ensOperationClassName As %String = ..ensOperationClassName
 
-    #dim ensRequestClassName As %String = ..application _ "." _ serviceDefinition.operationId _ "Request"
+    #dim ensRequestClassName As %String = ..packageRequest _ "." _ serviceDefinition.operationId _ "Request"
     Set ..tmp("MessageMap","MessageType", ensRequestClassName) = methodName
     
     If ##class(%Dictionary.MethodDefinition).%ExistsId(ensOperationClassName _ "||" _ methodName) {
@@ -460,7 +486,7 @@ Method ensOperationClass() As %Status [ Private ]
 
     Set mDef = ##class(%Dictionary.MethodDefinition).%New()
     Set mDef.Name = "genericProcessResponse"
-    Set mDef.FormalSpec = $$$FormatText("pRequest:%1,pResponse:%2,caller:%String,status:%Status,pHttpResponse:%Net.HttpResponse", "Ens.Request", ..application_".GenericResponse")
+    Set mDef.FormalSpec = $$$FormatText("pRequest:%1,pResponse:%2,caller:%String,status:%Status,pHttpResponse:%Net.HttpResponse", "Ens.Request", ..ensGenericResponseClassName)
     Set mDef.ReturnType = "%Status"
 
     Do mDef.Implementation.WriteLine($Char(9) _"Set sc = $$$OK")
@@ -575,7 +601,7 @@ Method ensServiceClass(serviceDefinition As %Library.DynamicObject) As %Status [
 {
     Set sc = $$$OK
 
-    Set serviceClassName = ..application _ "." _ serviceDefinition.operationId _ "Service"
+    Set serviceClassName = ..packageBusinessServices _ "." _ serviceDefinition.operationId _ "Service"
     
     Set ..tmp("SERVICES",serviceClassName)=""
 
@@ -588,7 +614,7 @@ Method ensServiceClass(serviceDefinition As %Library.DynamicObject) As %Status [
         }
     }
 
-    Set ensRequestClassName = ..application _ "." _ serviceDefinition.operationId _ "Request"
+    Set ensRequestClassName = ..packageRequest _ "." _ serviceDefinition.operationId _ "Request"
     Set ensOperationClassName = ..ensOperationClassName
     
 
@@ -651,7 +677,7 @@ Method ensServiceClass(serviceDefinition As %Library.DynamicObject) As %Status [
 Method ensRequestClass(serviceDefinition As %Library.DynamicObject, value As %Library.DynamicObject) As %Status [ Private ]
 {
     Set sc = $$$OK
-    Set className = ..application _ "." _ serviceDefinition.operationId _ "Request"
+    Set className = ..packageRequest _ "." _ serviceDefinition.operationId _ "Request"
     
     If $Data(^oddDEF(className)) {
         If ..overwriteIfExist {
