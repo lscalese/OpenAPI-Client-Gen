@@ -377,12 +377,7 @@ Method ensOperationMethod(serviceDefinition As %Library.DynamicObject) As %Statu
             Do mDef.Implementation.WriteLine($Char(9) _"}")
         } ElseIf in = "body" {
             If paramType [ "%Stream" {
-
-                Do mDef.Implementation.WriteLine($Char(9) _ "Do pRequest."_propertyName_".Rewind()")
-                Do mDef.Implementation.WriteLine($Char(9) _ "While 'pRequest."_propertyName_".AtEnd {")
-                Do mDef.Implementation.WriteLine($Char(9,9) _"Do pHttpRequestIn.EntityBody.Write(pRequest."_propertyName_".Read())")
-                Do mDef.Implementation.WriteLine($Char(9) _ "}")
-                
+                Do mDef.Implementation.WriteLine($Char(9) _"Do pHttpRequestIn.EntityBody.CopyFrom(pRequest."_propertyName_")")
             } Else {
                 Do mDef.Implementation.WriteLine($Char(9) _"Do pHttpRequestIn.EntityBody.Write(pRequest."_propertyName_")")
             }
