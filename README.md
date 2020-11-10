@@ -7,7 +7,7 @@ It could be used as tool to create production on your local instance or to be ho
 If this application is hosted, a REST api is available to upload the specification document and download the generated classes.  
 
 All generated classes are ABSOLUTELY NOT linked in any way with the generator.  
-Your free to edit anything to adapt it with your need.  
+Feel free to edit anything to adapt it with your need.  
 Consider the generated Production client as a template ready to use.  
   
 ## Production Sample
