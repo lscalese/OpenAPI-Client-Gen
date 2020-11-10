@@ -66,7 +66,7 @@ ClassMethod %CreateClientApplication(applicationName As %String, swagger As %Dyn
     TStart 
     Try {
         
-        Set specClass = applicationName _ ".spec"
+        Set specClass = applicationName _ ".model.spec"
 
         Set cDef=##class(%Dictionary.ClassDefinition).%OpenId(specClass,4,.sc)
         

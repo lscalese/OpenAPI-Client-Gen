@@ -4,6 +4,7 @@
  zn "IRISAPP"
  do $System.OBJ.LoadDir("/opt/irisapp/src","ck",,1)
  zpm "install sslclient"
+ zpm "install objectscript-openapi-definition"
  zpm "install swagger-ui"
  
  zn "%SYS"

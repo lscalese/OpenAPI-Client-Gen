@@ -41,11 +41,11 @@ This class represent all of parameters (query parameters, path, body, headers, f
 The Business operation will consume an instance of this class to generate a related http request.  
 
 * **GenericResponse class**  
-The Ens.Response generated subclass is named "package.GenericResponse" (petshop.GenericResponse in this sample).  
+The Ens.Response generated subclass is named "package.GenericResponse" (petshop.msg.GenericResponse in this sample).  
 It contains some properties to store the body response, headers, http status code, performed operation and status.  
 
 * **Business Process class**  
-The generated Business process name is simply packageName.Process (petshop.Process in this sample).  
+The generated Business process name is simply packageName.Process (petshop.bp.Process in this sample).  
 This is a basic implementation that redirect all messages to the Business Operation.  
 
 * **Business Operation class**  
@@ -65,55 +65,55 @@ We use curl command line in this sample.
   
 | Generated Classes | Description |
 | --- | --- |
-| petshop.GenericResponse | Generic Ens.Response |
-| petshop.Operation | Business Operation |
-| petshop.Process | Business Process |
+| petshop.msg.GenericResponse | Generic Ens.Response |
+| petshop.bo.Operation | Business Operation |
+| petshop.bp.Process | Business Process |
 | petshop.Production | Production configuration |
-| petshop.Projection | Projection to create CSP proxy Rest web application at compile time |
-| petshop.ProxyService | Empty Business Service used by proxy web application |
-| petshop.REST | %CSP.REST class for proxy web application |
+| petshop.rest.Projection | Projection to create CSP proxy Rest web application at compile time |
+| petshop.bs.ProxyService | Empty Business Service used by proxy web application |
+| petshop.rest.REST | %CSP.REST class for proxy web application |
 | petshop.spec | Swagger specification used by the generator |
 | petshop.Utils | utils... |
-| petshop.addPetRequest | Ens.Request for addPet |
-| petshop.addPetService | addPet Business Service template |
-| petshop.createUserRequest | Ens.Request for createUser |
-| petshop.createUserService | createUser Business Service template |
-| petshop.createUsersWithArrayInputRequest | Ens.Request for createUsersWithArrayInput |
-| petshop.createUsersWithArrayInputService | reateUsersWithArrayInput Business Service template |
-| petshop.createUsersWithListInputRequest | Ens.Request for createUsersWithListInput |
-| petshop.createUsersWithListInputService | createUsersWithListInput Business Service template |
-| petshop.deleteOrderRequest | Ens.Request for deleteOrder |
-| petshop.deleteOrderService | deleteOrder Business Service template|
-| petshop.deletePetRequest | Ens.Request for deletePet |
-| petshop.deletePetService | deletePet Business Service template|
-| petshop.deleteUserRequest | Ens.Request for deleteUser |
-| petshop.deleteUserService | deleteUser Business Service template |
-| petshop.findPetsByStatusRequest | Ens.Request for findPetsByStatus |
-| petshop.findPetsByStatusService | findPetsByStatus Business Service template |
-| petshop.findPetsByTagsRequest | Ens.Request for findPetsByTags |
-| petshop.findPetsByTagsService | findPetsByTags Business Service template |
-| petshop.getInventoryRequest | Ens.Request for getInventory |
-| petshop.getInventoryService | getInventory Business Service template |
-| petshop.getOrderByIdRequest | Ens.Request for getOrderById |
-| petshop.getOrderByIdService | getOrderById Business Service template |
-| petshop.getPetByIdRequest | Ens.Request for getPetById |
-| petshop.getPetByIdService | getPetById Business Service template|
-| petshop.getUserByNameRequest | Ens.Request for getUserByName |
-| petshop.getUserByNameService | getUserByName Business Service template|
-| petshop.loginUserRequest | Ens.Request for loginUser |
-| petshop.loginUserService | loginUser Business Service template |
-| petshop.logoutUserRequest | Ens.Request for logoutUser |
-| petshop.logoutUserService | logoutUser Business Service template |
-| petshop.placeOrderRequest | Ens.Request for placeOrder |
-| petshop.placeOrderService | placeOrder Business Service template |
-| petshop.updatePetRequest | Ens.Request for updatePet |
-| petshop.updatePetService | updatePet Business Service template |
-| petshop.updatePetWithFormRequest | Ens.Request for updatePetWithForm |
-| petshop.updatePetWithFormService | updatePetWithForm Business Service template |
-| petshop.updateUserRequest | Ens.Request for updateUser |
-| petshop.updateUserService | updateUser Business Service template |
-| petshop.uploadFileRequest | Ens.Request for uploadFile |
-| petshop.uploadFileService | uploadFile Business Service template |
+| petshop.msg.addPetRequest | Ens.Request for addPet |
+| petshop.bs.addPetService | addPet Business Service template |
+| petshop.msg.createUserRequest | Ens.Request for createUser |
+| petshop.bs.createUserService | createUser Business Service template |
+| petshop.msg.createUsersWithArrayInputRequest | Ens.Request for createUsersWithArrayInput |
+| petshop.bs.createUsersWithArrayInputService | reateUsersWithArrayInput Business Service template |
+| petshop.msg.createUsersWithListInputRequest | Ens.Request for createUsersWithListInput |
+| petshop.bs.createUsersWithListInputService | createUsersWithListInput Business Service template |
+| petshop.msg.deleteOrderRequest | Ens.Request for deleteOrder |
+| petshop.bs.deleteOrderService | deleteOrder Business Service template|
+| petshop.msg.deletePetRequest | Ens.Request for deletePet |
+| petshop.bs.deletePetService | deletePet Business Service template|
+| petshop.msg.deleteUserRequest | Ens.Request for deleteUser |
+| petshop.bs.deleteUserService | deleteUser Business Service template |
+| petshop.msg.findPetsByStatusRequest | Ens.Request for findPetsByStatus |
+| petshop.bs.findPetsByStatusService | findPetsByStatus Business Service template |
+| petshop.msg.findPetsByTagsRequest | Ens.Request for findPetsByTags |
+| petshop.bs.findPetsByTagsService | findPetsByTags Business Service template |
+| petshop.msg.getInventoryRequest | Ens.Request for getInventory |
+| petshop.bs.getInventoryService | getInventory Business Service template |
+| petshop.msg.getOrderByIdRequest | Ens.Request for getOrderById |
+| petshop.bs.getOrderByIdService | getOrderById Business Service template |
+| petshop.msg.getPetByIdRequest | Ens.Request for getPetById |
+| petshop.bs.getPetByIdService | getPetById Business Service template|
+| petshop.msg.getUserByNameRequest | Ens.Request for getUserByName |
+| petshop.bs.getUserByNameService | getUserByName Business Service template|
+| petshop.msg.loginUserRequest | Ens.Request for loginUser |
+| petshop.bs.loginUserService | loginUser Business Service template |
+| petshop.msg.logoutUserRequest | Ens.Request for logoutUser |
+| petshop.bs.logoutUserService | logoutUser Business Service template |
+| petshop.msg.placeOrderRequest | Ens.Request for placeOrder |
+| petshop.bs.placeOrderService | placeOrder Business Service template |
+| petshop.msg.updatePetRequest | Ens.Request for updatePet |
+| petshop.bs.updatePetService | updatePet Business Service template |
+| petshop.msg.updatePetWithFormRequest | Ens.Request for updatePetWithForm |
+| petshop.bs.updatePetWithFormService | updatePetWithForm Business Service template |
+| petshop.msg.updateUserRequest | Ens.Request for updateUser |
+| petshop.bs.updateUserService | updateUser Business Service template |
+| petshop.msg.uploadFileRequest | Ens.Request for uploadFile |
+| petshop.bs.uploadFileService | uploadFile Business Service template |
   
   
 ### Configure a production  
@@ -194,11 +194,11 @@ order by id desc
 What happened when you add a pet with the curl command?  
 In short : 
 
-* The /petshoprest is invoked and create an instance of petshop.addPetRequest (this is an Ens.Request subclass).  
-* The rest process invoke Business Process (petshop.Process) using petshop.ProxyService.  
-* petshop.Process send the request to the Business Operation (petshop.Operation).  
-* petshop.Operation create an http request related to the received Ens.Request instance and fill a petshop.GenericResponse.  
-* petshop.Process receive the response.  
+* The /petshoprest is invoked and create an instance of petshop.msg.addPetRequest (this is an Ens.Request subclass).  
+* The rest process invoke Business Process (petshop.bp.Process) using petshop.bs.ProxyService.  
+* petshop.bp.Process send the request to the Business Operation (petshop.bo.Operation).  
+* petshop.bo.Operation create an http request related to the received Ens.Request instance and fill a petshop.GenericResponse.  
+* petshop.bp.Process receive the response.  
 
 
 ## Code snippet
@@ -259,6 +259,7 @@ Open IRIS Namespace with Interoperability Enabled.
 Open Terminal and call:
 ```
 zpm "install openapi-client-gen"
+zpm "install objectscript-openapi-definition"
 ```
 
 Optional swagger-ui: 

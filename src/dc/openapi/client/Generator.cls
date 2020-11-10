@@ -35,6 +35,8 @@ Property packageRest As %String [ Private ];
 
 Property packageModel As %String [ Private ];
 
+Property packageDefinition As %String [ Private ];
+
 Property UrlMap As %Dictionary.XDataDefinition [ InitialExpression = {##class(%Dictionary.XDataDefinition).%New()}, Private ];
 
 /// To avoid erasing existing code, the generator don't overwrite existing classes.  These classes are skiped.<br/>
@@ -82,6 +84,7 @@ Method prepare() As %Status
     Set ..packageBusinessProcesses = ..application _ ".bp"
     Set ..packageRest = ..application _ ".rest"
     Set ..packageModel = ..application _ ".model"
+    Set ..packageDefinition = ..application _ ".model.Definition"
 
     Set ..ensOperationClassName = ..packageBusinessOperations _ ".Operation" 
     Set ..ensGenericResponseClassName = ..packageRequest _ ".GenericResponse" 
@@ -98,6 +101,8 @@ Method generateEnsembleClasses() As %Status
     
     Try {
         Do ..prepare()
+
+        $$$ThrowOnError(..models())
 
         Set ..UrlMap = ##class(%Dictionary.XDataDefinition).%New()
         Set ..UrlMap.Name = "UrlMap"
@@ -153,6 +158,28 @@ Method generateEnsembleClasses() As %Status
         Set sc = ex.AsStatus()
     }
 
+    Return sc
+}
+
+Method models() As %Status
+{
+    #dim sc As %Status = $$$OK
+    #dim class As %Dictionary.ClassDefinition
+    $$$ThrowOnError(##class(Grongier.OpenApi.Definition).Process(..packageModel_".spec"))
+
+    ; add persistent super class...
+
+    Set key = ..packageDefinition_"."
+    For  {
+        Set key = $Order(^oddDEF(key))
+        Quit:(key="")||(key'[..packageDefinition_".")
+        Set class  = ##class(%Dictionary.ClassDefinition).%OpenId(key)
+        If class.Super '[ "Persistent" {
+            Set class.Super = "%Persistent,%XML.Adaptor,"_class.Super
+            $$$ThrowOnError(class.%Save())
+            $$$ThrowOnError($SYSTEM.OBJ.Compile(key, "ck"))
+        }
+    }
     Return sc
 }
 
@@ -307,7 +334,13 @@ Method restProxyMethod(serviceDefinition As %Library.DynamicObject) As %Status [
             }
             
         } ElseIf in = "body" {
-            Set line = "Do ensRequest.%1.CopyFrom(%request.Content)"
+            If paramType [ ..packageDefinition {
+                Set line = "Set ensRequest.%1 = ##class(%2).%New()"
+                Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText(line, propertyName,paramType))
+                Set line = "Do ensRequest.%1.%JSONImport(%request.Content)"
+            } Else {
+                Set line = "Do ensRequest.%1.CopyFrom(%request.Content)"
+            }
             Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText(line, propertyName))
         }
     }
@@ -403,8 +436,11 @@ Method ensOperationMethod(serviceDefinition As %Library.DynamicObject) As %Statu
             Do mDef.Implementation.WriteLine($Char(9,9) _"Do pHttpRequestIn.InsertFormData("""_parameterName_""", pRequest."_propertyName_")")
             Do mDef.Implementation.WriteLine($Char(9) _"}")
         } ElseIf in = "body" {
-            If paramType [ "%Stream" {
-                Do mDef.Implementation.WriteLine($Char(9) _"Do pHttpRequestIn.EntityBody.CopyFrom(pRequest."_propertyName_")")
+            ;If paramType [ "%Stream" {
+            ;    Do mDef.Implementation.WriteLine($Char(9) _"Do pHttpRequestIn.EntityBody.CopyFrom(pRequest."_propertyName_")")
+            If paramType [ ..packageDefinition {
+                Do mDef.Implementation.WriteLine($Char(9) _"Set sc = pRequest."_propertyName_".%JSONExportToStream(pHttpRequestIn.EntityBody)")
+                Do mDef.Implementation.WriteLine($Char(9) _"Quit:$$$ISERR(sc) sc")
             } Else {
                 Do mDef.Implementation.WriteLine($Char(9) _"Do pHttpRequestIn.EntityBody.Write(pRequest."_propertyName_")")
             }
@@ -704,7 +740,7 @@ Method ensRequestClass(serviceDefinition As %Library.DynamicObject, value As %Li
                 While iterParam.%GetNext(.keyParam, .parameter) {
                     Set property = ##class(%Dictionary.PropertyDefinition).%New()
                     Set pName = parameter.in _ $Tr(parameter.name, "_", "")
-                    Set pType = ..getObjectScriptType(parameter.type, parameter.in)
+                    Set pType = ..getObjectScriptType(parameter)
                     Set property.Required = parameter.required
                     Set requestParamLocation = requestParamLocation _ "," _ pName _ ":" _ parameter.in _ ":" _ parameter.name _ ":" _ pType
                 }
@@ -788,10 +824,9 @@ Method ensRequestClass(serviceDefinition As %Library.DynamicObject, value As %Li
         While iterParam.%GetNext(.keyParam, .parameter) {
             Set property = ##class(%Dictionary.PropertyDefinition).%New()
             Set property.Name = parameter.in _ $Tr(parameter.name, "_", "")
-            Set property.Type = ..getObjectScriptType(parameter.type, parameter.in)
+            Set property.Type = ..getObjectScriptType(parameter)
             Set property.Required = parameter.required
 
-            
             Set:parameter.description'="" property.Description =  $Replace(parameter.description, $$$NL, "<br/>" _ $$$NL )
             Do cDef.Properties.Insert(property)
 
@@ -862,9 +897,21 @@ ClassMethod getResponseDoc(responses As %DynamicObject) As %String
     Return doc
 }
 
-ClassMethod getObjectScriptType(OpenApiType As %String, in As %String = "") As %String
+Method getObjectScriptType(parameter As %DynamicObject) As %String
 {
-    If in = "body"  Return "%Stream.GlobalBinary"
+    Set OpenApiType = parameter.type
+    If parameter.in = "body"  {
+        ; ex: "#/definitions/ApiResponse"
+        Set ref = $Extract(parameter.schema."$ref", 15, *)
+        Return:ref="" "%Stream.GlobalBinary"
+        
+        Set className = ..packageDefinition _ "."_ref
+        If $$$defClassDefined(className) { 
+            Return className
+        }
+
+        Return "%Stream.GlobalBinary"
+    }
     If OpenApiType = "integer" Return "%Integer"
     If OpenApiType = "long" Return "%Integer"
     If OpenApiType = "float" Return "%Numeric"
