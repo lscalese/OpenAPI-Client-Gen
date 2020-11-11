@@ -192,6 +192,10 @@ Now you can check your production and the message viewer.
 
 Also you can analyze all messages with visual trace.  
 <img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Visual-Trace-2.png">
+<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/GetById.png">
+<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/FindByStatus.png">
+
+
 
 **SQL Query to show GenericResponse records :**
 ```
