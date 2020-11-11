@@ -149,7 +149,6 @@ ClassMethod translateSpec(spec) As %Status
             If $ISOBJECT(serviceDefinition.responses) {
                 Set iterResp = serviceDefinition.responses.%GetIterator()
                 While iterResp.%GetNext(.httpStatusCode , .codeObj ) {
-                    zw codeObj
                     Set:codeObj.schema."$ref"'="" codeObj.schema."$ref" = ..translateName(codeObj.schema."$ref")
                     Set:codeObj.schema.items."$ref"'="" codeObj.schema.items."$ref" = ..translateName(codeObj.schema.items."$ref")
                 }
