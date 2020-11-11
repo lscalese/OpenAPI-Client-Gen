@@ -71,27 +71,32 @@ ClassMethod findConfigItem(name As %String, businessType As %String = "", enable
 	Quit result
 }
 
-ClassMethod processParsedResponse(pHttpResponse As %Net.HttpResponse, responseClass As %String, caller As %String, pRequest As Ens.Request, pResponse As Ens.Response) As %XML.Adaptor
+ClassMethod processParsedResponse(pHttpResponse As %Net.HttpResponse, responseClass As %String, caller As %String, pRequest As Ens.Request, pResponse As Ens.Response) As %Status
 {
-    Return:responseClass="" ""
-    Set parsedResponse = ""
+    Return:responseClass="" $$$OK
+    Set parsedResponse = "", sc = $$$OK
     If (pHttpResponse.StatusCode = 200) && (pHttpResponse.ContentType="application/json"){
         Set parsedResponse = $ClassMethod(responseClass, "%New")
-        If parsedResponse.%GetParameter("ISLIST") {
-            Set list = [].%FromJSON(pHttpResponse.Data)
-            Set iter = list.%GetIterator()
-            While iter.%GetNext(.keyParam, .value) {
+        Try {
+            If parsedResponse.%GetParameter("ISLIST") {
+                Set list = [].%FromJSON(pHttpResponse.Data)
+                Set iter = list.%GetIterator()
+                While iter.%GetNext(.keyParam, .value) {
+                    Set model = $ClassMethod(parsedResponse.%GetParameter("MODELTYPE"), "%New")
+                    Do model.%JSONImport(value)
+                    Do $Method($Property(parsedResponse, parsedResponse.%GetParameter("MODEL")), "Insert", model)
+                }
+            } Else {
                 Set model = $ClassMethod(parsedResponse.%GetParameter("MODELTYPE"), "%New")
-                Do model.%JSONImport(value)
-                Do $Method($Property(parsedResponse, parsedResponse.%GetParameter("MODEL")), "Insert", model)
+                Do model.%JSONImport(pHttpResponse.Data)
+                Set $Property(parsedResponse, parsedResponse.%GetParameter("MODEL")) = model
             }
-        } Else {
-            Set model = $ClassMethod(parsedResponse.%GetParameter("MODELTYPE"), "%New")
-            Do model.%JSONImport(pHttpResponse.Data)
-            Set $Property(parsedResponse, parsedResponse.%GetParameter("MODEL")) = model
+            Set pResponse.parsedResponse = parsedResponse
+        } Catch(ex) {
+            Set sc = ex.AsStatus()
         }
     }
-    Return parsedResponse
+    Return sc
 }
 
 }

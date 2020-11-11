@@ -477,7 +477,7 @@ Method ensOperationMethod(serviceDefinition As %Library.DynamicObject) As %Statu
     ;Set line = $$$FormatText(line, ..application_".Utils",$Get(..tmp("ensResponse", serviceDefinition.operationId)), methodName, "pRequest", "pResponse")
     ;Do mDef.Implementation.WriteLine($Char(9) _ line)
     
-    Do mDef.Implementation.WriteLine($Char(9) _ "Do ..genericProcessResponse(pRequest, pResponse, """_methodName_""", sc, $Get(pHttpResponse),"""_$Get(..tmp("ensResponse", serviceDefinition.operationId))_""")")
+    Do mDef.Implementation.WriteLine($Char(9) _ "Set sc = ..genericProcessResponse(pRequest, pResponse, """_methodName_""", sc, $Get(pHttpResponse),"""_$Get(..tmp("ensResponse", serviceDefinition.operationId))_""")")
     Do mDef.Implementation.WriteLine($Char(9) _ "Return sc")
     Do cDef.Methods.Insert(mDef)
 
@@ -556,14 +556,7 @@ Method ensOperationClass() As %Status [ Private ]
     Do mDef.Implementation.WriteLine($Char(9,9,9) _"Do pResponse.headers.SetAt(headerValue, key)")
     Do mDef.Implementation.WriteLine($Char(9,9) _"}")
     
-    ;Set pResponse.parsedResponse = ##class(petshop.Utils).processParsedResponse(pHttpResponse, parsedResponseClassName, caller, pRequest, pResponse)
-     Do mDef.Implementation.WriteLine($Char(9,9) _"Set pResponse.parsedResponse = ##class(petshop.Utils).processParsedResponse(pHttpResponse, parsedResponseClassName, caller, pRequest, pResponse)")
-
-    ;..ensGenericResponseClassName
-    ;Do mDef.Implementation.WriteLine($Char(9,9) _"If (pHttpResponse.StatusCode = 200) && (pResponse.%ClassName(1)'="""_..ensGenericResponseClassName_""") {")
-    ;Do mDef.Implementation.WriteLine($Char(9,9,9) _"Do:pHttpResponse.ContentType=""application/json"" pResponse.parsedResponse.%JSONImport(pHttpResponse.Data)")
-    ;Do mDef.Implementation.WriteLine($Char(9,9) _"")
-    ;Do mDef.Implementation.WriteLine($Char(9,9) _"}")
+    Do mDef.Implementation.WriteLine($Char(9,9) _"Set sc = ##class(petshop.Utils).processParsedResponse(pHttpResponse, parsedResponseClassName, caller, pRequest, pResponse)")
 
     Do mDef.Implementation.WriteLine($Char(9) _"}")
     Do mDef.Implementation.WriteLine($Char(9) _"Return sc")
