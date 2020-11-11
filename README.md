@@ -167,6 +167,17 @@ curl --location --request POST 'http://localhost:52795/petshoprest/pet/456789/up
 ```
 to adapt with your own image path.  
 
+### Get By ID
+
+```
+curl --location --request GET 'http://localhost:52795/petshoprest/pet/456789'
+```
+
+### Find By Status
+
+```
+curl --location --request GET 'http://localhost:52795/petshoprest/pet/findByStatus?status=pending'
+```
 ### Delete pet
 
 ```

@@ -37,6 +37,8 @@ Property packageModel As %String [ Private ];
 
 Property packageDefinition As %String [ Private ];
 
+Property parsedReponseClassName As %String [ Private ];
+
 Property UrlMap As %Dictionary.XDataDefinition [ InitialExpression = {##class(%Dictionary.XDataDefinition).%New()}, Private ];
 
 /// To avoid erasing existing code, the generator don't overwrite existing classes.  These classes are skiped.<br/>
@@ -85,6 +87,7 @@ Method prepare() As %Status
     Set ..packageRest = ..application _ ".rest"
     Set ..packageModel = ..application _ ".model"
     Set ..packageDefinition = ..application _ ".model.Definition"
+    Set ..parsedReponseClassName = ..packageRequest _ ".ParsedResponse"
 
     Set ..ensOperationClassName = ..packageBusinessOperations _ ".Operation" 
     Set ..ensGenericResponseClassName = ..packageRequest _ ".GenericResponse" 
@@ -103,6 +106,7 @@ Method generateEnsembleClasses() As %Status
         Do ..prepare()
 
         $$$ThrowOnError(..models())
+        
 
         Set ..UrlMap = ##class(%Dictionary.XDataDefinition).%New()
         Set ..UrlMap.Name = "UrlMap"
@@ -127,7 +131,8 @@ Method generateEnsembleClasses() As %Status
             While methodIter.%GetNext(.method , .serviceDefinition ) {
             
                 Set %zCurrentData("method") = method
-            
+
+                $$$ThrowOnError(..ensResponseClass(serviceDefinition))
                 $$$ThrowOnError(..ensRequestClass(serviceDefinition, value))
                 $$$ThrowOnError(..ensServiceClass(serviceDefinition))
                 $$$ThrowOnError(..ensOperationMethod(serviceDefinition))
@@ -459,8 +464,20 @@ Method ensOperationMethod(serviceDefinition As %Library.DynamicObject) As %Statu
     }
 
     Do mDef.Implementation.WriteLine($Char(9) _ "Set sc = ..Adapter.SendFormDataArray(.pHttpResponse, """_ %zCurrentData("method") _""", pHttpRequestIn , , , pURL)")
-    Do mDef.Implementation.WriteLine($Char(9) _ $$$FormatText("Set pResponse = ##class(%1).%New()",..ensGenericResponseClassName))
-    Do mDef.Implementation.WriteLine($Char(9) _ "Do ..genericProcessResponse(pRequest, pResponse, ""POSTaddPet"", sc, $Get(pHttpResponse))")
+    Do mDef.Implementation.WriteLine($Char(9) _ $$$FormatText("Set pResponse = ##class(%1).%New()", ..ensGenericResponseClassName))
+    
+    ;If $Get(..tmp("ensResponse", serviceDefinition.operationId), ..ensGenericResponseClassName) '= ..ensGenericResponseClassName {
+    ;    Do mDef.Implementation.WriteLine($Char(9) _ "If (pHttpResponse.StatusCode = 200) && (pHttpResponse.ContentType=""application/json""){")
+    ;    Do mDef.Implementation.WriteLine($Char(9,9) _ $$$FormatText("Set pResponse.parsedResponse = ##class(%1).%New()", ..tmp("ensResponse200", serviceDefinition.operationId)))
+    ;    Do mDef.Implementation.WriteLine($Char(9,9) _ "Do pResponse.parsedResponse.%JSONImport(pHttpResponse.Data)")
+    ;    Do mDef.Implementation.WriteLine($Char(9) _ "}")
+    ;}
+    ;processParsedResponse
+    ;Set line = "Set pResponse.parsedResponse = ##class(%1).processParsedResponse(pHttpResponse, ""%2"", ""%3"", %4, %5)"
+    ;Set line = $$$FormatText(line, ..application_".Utils",$Get(..tmp("ensResponse", serviceDefinition.operationId)), methodName, "pRequest", "pResponse")
+    ;Do mDef.Implementation.WriteLine($Char(9) _ line)
+    
+    Do mDef.Implementation.WriteLine($Char(9) _ "Do ..genericProcessResponse(pRequest, pResponse, """_methodName_""", sc, $Get(pHttpResponse),"""_$Get(..tmp("ensResponse", serviceDefinition.operationId))_""")")
     Do mDef.Implementation.WriteLine($Char(9) _ "Return sc")
     Do cDef.Methods.Insert(mDef)
 
@@ -523,7 +540,7 @@ Method ensOperationClass() As %Status [ Private ]
 
     Set mDef = ##class(%Dictionary.MethodDefinition).%New()
     Set mDef.Name = "genericProcessResponse"
-    Set mDef.FormalSpec = $$$FormatText("pRequest:%1,pResponse:%2,caller:%String,status:%Status,pHttpResponse:%Net.HttpResponse", "Ens.Request", ..ensGenericResponseClassName)
+    Set mDef.FormalSpec = $$$FormatText("pRequest:%1,pResponse:%2,caller:%String,status:%Status,pHttpResponse:%Net.HttpResponse,parsedResponseClassName:%String", "Ens.Request", ..ensGenericResponseClassName)
     Set mDef.ReturnType = "%Status"
 
     Do mDef.Implementation.WriteLine($Char(9) _"Set sc = $$$OK")
@@ -538,6 +555,16 @@ Method ensOperationClass() As %Status [ Private ]
     Do mDef.Implementation.WriteLine($Char(9,9,9) _"Quit:key=""""")
     Do mDef.Implementation.WriteLine($Char(9,9,9) _"Do pResponse.headers.SetAt(headerValue, key)")
     Do mDef.Implementation.WriteLine($Char(9,9) _"}")
+    
+    ;Set pResponse.parsedResponse = ##class(petshop.Utils).processParsedResponse(pHttpResponse, parsedResponseClassName, caller, pRequest, pResponse)
+     Do mDef.Implementation.WriteLine($Char(9,9) _"Set pResponse.parsedResponse = ##class(petshop.Utils).processParsedResponse(pHttpResponse, parsedResponseClassName, caller, pRequest, pResponse)")
+
+    ;..ensGenericResponseClassName
+    ;Do mDef.Implementation.WriteLine($Char(9,9) _"If (pHttpResponse.StatusCode = 200) && (pResponse.%ClassName(1)'="""_..ensGenericResponseClassName_""") {")
+    ;Do mDef.Implementation.WriteLine($Char(9,9,9) _"Do:pHttpResponse.ContentType=""application/json"" pResponse.parsedResponse.%JSONImport(pHttpResponse.Data)")
+    ;Do mDef.Implementation.WriteLine($Char(9,9) _"")
+    ;Do mDef.Implementation.WriteLine($Char(9,9) _"}")
+
     Do mDef.Implementation.WriteLine($Char(9) _"}")
     Do mDef.Implementation.WriteLine($Char(9) _"Return sc")
     
@@ -561,6 +588,16 @@ Method ensOperationClass() As %Status [ Private ]
 Method ensGenericResponse() As %Status
 {
     Set sc = $$$OK
+
+    If '$Data(^oddDEF(..parsedReponseClassName)) {
+        #dim parsedResponseClass As %Dictionary.ClassDefinition = ##class(%Dictionary.ClassDefinition).%New(..parsedReponseClassName)
+        Set parsedResponseClass.Super = "%Persistent,%XML.Adaptor"
+        $$$ThrowOnError(parsedResponseClass.%Save())
+        If ..compile { 
+            $$$ThrowOnError($SYSTEM.OBJ.Compile(..parsedReponseClassName, "ck"))
+        }
+    }
+
     Set genericResponseClassName = ..ensGenericResponseClassName
 
     If $Data(^oddDEF(genericResponseClassName)) {
@@ -607,7 +644,12 @@ Method ensGenericResponse() As %Status
     Set property.Type = "%String"
     Do property.Parameters.SetAt(128, "MAXLEN")
     Do property.Parameters.SetAt(1, "TRUNCATE")
-    
+    Do cDef.Properties.Insert(property)
+
+    Set property = ##class(%Dictionary.PropertyDefinition).%New()
+    Set property.Name = "parsedResponse"
+    Set property.Type = ..parsedReponseClassName
+    ;Set property.Collection = "list"
     Do cDef.Properties.Insert(property)
     
     $$$ThrowOnError(cDef.%Save())
@@ -719,6 +761,49 @@ Method ensServiceClass(serviceDefinition As %Library.DynamicObject) As %Status [
     If ..compile {
         Set sc = $system.OBJ.Compile(serviceClassName,"ck")
     }
+    Return sc
+}
+
+Method ensResponseClass(serviceDefinition As %Library.DynamicObject) As %Status
+{
+    Set sc = $$$OK
+    Set r200 = serviceDefinition.responses."200"
+    Return:'$Isobject(r200) sc
+    Set array = $$$NO
+    If r200.schema.type="array" {
+        Set array = $$$YES
+        Set ref = $Extract(r200.schema.items."$ref", 15, *)
+    } Else {
+        Set ref = $Extract(r200.schema."$ref", 15, *)
+    }
+    Return:ref="" sc
+    Set className = ..packageRequest _ "."_serviceDefinition.operationId_"Response"
+    Return:$Data(^oddDEF(className)) sc
+    
+    #dim cDef As %Dictionary.ClassDefinition = ##class(%Dictionary.ClassDefinition).%New(className)
+    Set cDef.Super = ..parsedReponseClassName
+
+    #dim parsedResponse As %Dictionary.PropertyDefinition = ##class(%Dictionary.PropertyDefinition).%New()
+    ;Set parsedResponse.Name = "parsedResponse"
+    Set parsedResponse.Name = ref
+    Set parsedResponse.Type = ..packageDefinition _ "." _ ref
+    Set:array parsedResponse.Collection = "list"
+    ;Set parsedResponse.InitialExpression = $$$FormatText("##class(%1).%New()",parsedResponse.Type)
+    Do cDef.Properties.Insert(parsedResponse)
+
+    Do cDef.Parameters.Insert(..createClassParameter("ISLIST", array))
+    Do cDef.Parameters.Insert(..createClassParameter("MODEL", ref))
+    Do cDef.Parameters.Insert(..createClassParameter("MODELTYPE", parsedResponse.Type))
+
+    $$$ThrowOnError(cDef.%Save())
+
+    If ..compile {
+        Set sc = $SYSTEM.OBJ.Compile(className, "ck")
+    }
+
+    Set ..tmp("ensResponse", serviceDefinition.operationId) = className
+    Set ..tmp("ensResponse200", serviceDefinition.operationId) = parsedResponse.Type
+
     Return sc
 }
 
