@@ -3,6 +3,8 @@ Class dc.openapi.client.Generator Extends %RegisteredObject
 
 Property spec As %DynamicObject;
 
+Property originalSpec As %DynamicObject;
+
 Property application As %String;
 
 // Property ensemble As %Boolean [ InitialExpression = 1 ];
@@ -80,6 +82,9 @@ ClassMethod packageExists(packageName As %String) As %Boolean
 
 Method prepare() As %Status
 {
+
+    ;Do ..translateSpec()
+
     Set ..packageRequest = ..application _ ".msg"
     Set ..packageBusinessServices = ..application _ ".bs"
     Set ..packageBusinessOperations = ..application _ ".bo"

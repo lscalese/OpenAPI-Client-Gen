@@ -94,12 +94,17 @@ ClassMethod %CreateClientApplication(applicationName As %String, swagger As %Dyn
 
         Set formatter=##class(%JSON.Formatter).%New()
         
+        Do ..translateSpec(.swagger)
+        Set ^CacheTempLsc = swagger.%ToJSON()
+
         $$$ThrowOnError(formatter.FormatToString(swagger, .swaggerString))
         $$$ThrowOnError(xData.Data.Write(swaggerString))
         $$$ThrowOnError(cDef.XDatas.Insert(xData))
         $$$ThrowOnError(cDef.%Save())
         $$$ThrowOnError($system.OBJ.Compile(specClass,"ck-d"))
         
+        
+
         Set generator = ##class(dc.openapi.client.Generator).%New()
         Set generator.spec = swagger
         Set generator.application = applicationName
@@ -124,6 +129,69 @@ ClassMethod %RemoveXDataBlock(cDef, blockName)
  	If (key'="") {
  		Set oid = cDef.XDatas.RemoveAt(key)
 	}
+}
+
+ClassMethod translateSpec(spec) As %Status
+{
+    ;set originalSpec = {}.%FromJSON(spec.%ToJSON()) ; deep copy
+
+    #dim iter As %Iterator.AbstractIterator = spec.paths.%GetIterator()
+    #dim serviceLocation As %String
+    #dim serviceDefinition As %Library.DynamicObject
+    #dim method As %String
+
+    
+    While iter.%GetNext(.serviceLocation , .value ) {
+        Set methodIter = value.%GetIterator()
+        While methodIter.%GetNext(.method , .serviceDefinition ) {
+            Set serviceDefinition.operationId = ..translateName(serviceDefinition.operationId)
+
+            If $ISOBJECT(serviceDefinition.responses) {
+                Set iterResp = serviceDefinition.responses.%GetIterator()
+                While iterResp.%GetNext(.httpStatusCode , .codeObj ) {
+                    zw codeObj
+                    Set:codeObj.schema."$ref"'="" codeObj.schema."$ref" = ..translateName(codeObj.schema."$ref")
+                    Set:codeObj.schema.items."$ref"'="" codeObj.schema.items."$ref" = ..translateName(codeObj.schema.items."$ref")
+                }
+            }
+            
+        }
+    }
+
+    ;definitions
+
+    
+    Set newDef = {}
+    
+    Set iter = spec.definitions.%GetIterator()
+
+    While iter.%GetNext(.defKey , .def ) {
+        
+        Set copyDef = {}.%FromJSON(def.%ToJSON())
+        Do spec.definitions.%Remove(defKey)
+
+        
+        If $ISOBJECT(copyDef.properties) {
+            Set iterProp = copyDef.properties.%GetIterator()
+
+            While iterProp.%GetNext(.propKey , .propDef ) {
+                Set:propDef."$ref"'="" propDef."$ref" = ..translateName(propDef."$ref")
+                Set:propDef.items."$ref"'="" propDef.items."$ref" = ..translateName(propDef.items."$ref")
+            }
+        }
+
+        Set newDefKey = ..translateName(defKey)
+        Do newDef.%Set(..translateName(defKey), copyDef)
+    }
+
+    Set spec.definitions = newDef
+
+    Return $$$OK
+}
+
+ClassMethod translateName(name As %String) As %IO.StringStream
+{
+    Return $Translate(name, "_", "")
 }
 
 }
