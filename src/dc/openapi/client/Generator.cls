@@ -202,6 +202,7 @@ Method restProxy() As %Status [ Private ]
     } Else {
         Set cDef = ##class(%Dictionary.ClassDefinition).%New(restClassname)
     }
+    Set cDef.ProcedureBlock = 1
 
     Set utilsClass =..application_".Utils"
     If '$Data(^oddDEF(utilsClass)) {
@@ -214,6 +215,7 @@ Method restProxy() As %Status [ Private ]
     
     If ' ##class(%Dictionary.ClassDefinition).%ExistsId(projectionClassName) {
         #dim projectionClass As %Dictionary.ClassDefinition = ##class(%Dictionary.ClassDefinition).%New(projectionClassName)
+        Set projectionClass.ProcedureBlock = 1
         Set projectionClass.Super = "%Projection.AbstractProjection"
         #dim mDef As %Dictionary.MethodDefinition = ##class(%Dictionary.MethodDefinition).%New()
         Set mDef.Name = "CreateProjection"
@@ -289,6 +291,8 @@ Method restProxyMethod(serviceDefinition As %Library.DynamicObject) As %Status [
     #dim cDef As %Dictionary.ClassDefinition = ##class(%Dictionary.ClassDefinition).%OpenId(restClassname)
     #dim mDef As %Dictionary.MethodDefinition = ##class(%Dictionary.MethodDefinition).%New()
     
+    Set cDef.ProcedureBlock = 1
+
     Set methodName = $Zcvt(%zCurrentData("method"),"U")_serviceDefinition.operationId
 
     If ##class(%Dictionary.MethodDefinition).%ExistsId(restClassname_"||"_methodName) {
@@ -531,6 +535,7 @@ Method ensOperationClass() As %Status [ Private ]
 
     Set cDef = ##class(%Dictionary.ClassDefinition).%New(ensOperationClassName)
     Set cDef.Super = "Ens.BusinessOperation"
+    Set cDef.ProcedureBlock = 1
 
     Set property = ##class(%Dictionary.PropertyDefinition).%New()
     Set property.Name = "Adapter"
@@ -588,6 +593,8 @@ Method ensGenericResponse() As %Status
     If '$Data(^oddDEF(..parsedReponseClassName)) {
         #dim parsedResponseClass As %Dictionary.ClassDefinition = ##class(%Dictionary.ClassDefinition).%New(..parsedReponseClassName)
         Set parsedResponseClass.Super = "%Persistent,%XML.Adaptor"
+        Set parsedResponseClass.ProcedureBlock = 1
+        
         $$$ThrowOnError(parsedResponseClass.%Save())
         If ..compile { 
             $$$ThrowOnError($SYSTEM.OBJ.Compile(..parsedReponseClassName, "ck"))
@@ -608,6 +615,7 @@ Method ensGenericResponse() As %Status
     Set cDef = ##class(%Dictionary.ClassDefinition).%New(genericResponseClassName)
     Set cDef.Super = "%Persistent,Ens.Response"
     Set cDef.Inheritance = "left"
+    Set cDef.ProcedureBlock = 1
 
     #dim property As %Dictionary.PropertyDefinition
     Set property = ##class(%Dictionary.PropertyDefinition).%New()
@@ -674,6 +682,7 @@ Method ensProxyService() As %Status
     
     #dim cDef As %Dictionary.ClassDefinition = ##class(%Dictionary.ClassDefinition).%New(serviceClassName)
     Set cDef.Super = "Ens.BusinessService"
+    Set cDef.ProcedureBlock = 1
 
     $$$TOE(sc, cDef.%Save())
     If ..compile {
@@ -706,7 +715,7 @@ Method ensServiceClass(serviceDefinition As %Library.DynamicObject) As %Status [
 
     Set cDef = ##class(%Dictionary.ClassDefinition).%New(serviceClassName)
     Set cDef.Super = "Ens.BusinessService"
-
+    Set cDef.ProcedureBlock = 1
 
     Set property = ##class(%Dictionary.PropertyDefinition).%New()
     Set property.Name = "Adapter"
@@ -778,6 +787,7 @@ Method ensResponseClass(serviceDefinition As %Library.DynamicObject) As %Status
     
     #dim cDef As %Dictionary.ClassDefinition = ##class(%Dictionary.ClassDefinition).%New(className)
     Set cDef.Super = ..parsedReponseClassName
+    Set cDef.ProcedureBlock = 1
 
     #dim parsedResponse As %Dictionary.PropertyDefinition = ##class(%Dictionary.PropertyDefinition).%New()
     ;Set parsedResponse.Name = "parsedResponse"
@@ -835,6 +845,7 @@ Method ensRequestClass(serviceDefinition As %Library.DynamicObject, value As %Li
     }
 
     Set cDef = ##class(%Dictionary.ClassDefinition).%New(className)
+    Set cDef.ProcedureBlock = 1
     Set cDef.Description = "Request Object for application : "_..application _ $$$NL_"<br/>"
                             _ "Service : "_serviceDefinition.operationId
 
@@ -942,6 +953,7 @@ Method ensProcessClass() As %Status
     }
 
     Set cDef = ##class(%Dictionary.ClassDefinition).%New(..ensProcessClassName)
+    Set cDef.ProcedureBlock = 1
     Set cDef.Super = "Ens.BusinessProcess"
 
     Set mDef = ##class(%Dictionary.MethodDefinition).%New()
@@ -1069,6 +1081,7 @@ Method ensProduction() As %Status
     }
 
     Set cDef = ##class(%Dictionary.ClassDefinition).%New(productionClassName)
+    Set cDef.ProcedureBlock = 1
     Set cDef.Super = "Ens.Production"
     Do cDef.XDatas.Insert(xData)
 
