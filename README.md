@@ -226,7 +226,7 @@ Set sc = ##class(dc.openapi.client.Spec).generateApp("petshop", "https://petstor
 ```
 By filename, ex:
 ```
-Set sc = ##class(dc.openapi.client.Spec).generateApp("petshop", "/opt/irisapp/clientgen.json")
+Set sc = ##class(dc.openapi.client.Spec).generateApp("petshop", "/irisdev/app/petshop.json")
 ```
 By DynamicObject
 

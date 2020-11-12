@@ -153,6 +153,14 @@ ClassMethod translateSpec(spec) As %Status
                     Set:codeObj.schema.items."$ref"'="" codeObj.schema.items."$ref" = ..translateName(codeObj.schema.items."$ref")
                 }
             }
+
+            If $ISOBJECT(serviceDefinition.parameters) {
+                Set iterParams = serviceDefinition.parameters.%GetIterator()
+                While iterParams.%GetNext(.paramsKey , .param ) {
+                    Set:param.schema."$ref"'="" param.schema."$ref" = ..translateName(param.schema."$ref")
+                    Set:param.schema.items."$ref"'="" param.schema.items."$ref" = ..translateName(param.schema.items."$ref")
+                }
+            }
             
         }
     }
