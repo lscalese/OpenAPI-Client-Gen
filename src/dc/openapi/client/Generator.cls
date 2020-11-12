@@ -249,7 +249,7 @@ Method restProxy() As %Status [ Private ]
         Do mDef.Implementation.WriteLine($Char(9)_"set webProperties(""iKnowEnabled"") = 1")
         Do mDef.Implementation.WriteLine($Char(9)_"set webProperties(""DeepSeeEnabled"") = 1")
         Do mDef.Implementation.WriteLine($Char(9)_"Set webProperties(""DispatchClass"")="""_restClassname_"""")
-        Do mDef.Implementation.WriteLine($Char(9)_"Set webProperties(""MatchRoles"")="":%DB_IRISAPP""")
+        Do mDef.Implementation.WriteLine($Char(9)_"Set webProperties(""MatchRoles"")="":%DB_"" _ oldNs")
         Do mDef.Implementation.WriteLine($Char(9)_"set sc = ##class(Security.Applications).Create(webName, .webProperties)")
         Do mDef.Implementation.WriteLine($Char(9)_"write !,""Web application creation status "", $SYSTEM.Status.GetOneErrorText(sc),! ")
         ;Do mDef.Implementation.WriteLine($Char(9)_"Zn oldNs")
