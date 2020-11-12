@@ -95,7 +95,7 @@ ClassMethod %CreateClientApplication(applicationName As %String, swagger As %Dyn
         Set formatter=##class(%JSON.Formatter).%New()
         
         Do ..translateSpec(.swagger)
-        Set ^CacheTempLsc = swagger.%ToJSON()
+        ;Set ^CacheTempLsc = swagger.%ToJSON()
 
         $$$ThrowOnError(formatter.FormatToString(swagger, .swaggerString))
         $$$ThrowOnError(xData.Data.Write(swaggerString))
@@ -103,11 +103,7 @@ ClassMethod %CreateClientApplication(applicationName As %String, swagger As %Dyn
         $$$ThrowOnError(cDef.%Save())
         $$$ThrowOnError($system.OBJ.Compile(specClass,"ck-d"))
         
-        
-
-        Set generator = ##class(dc.openapi.client.Generator).%New()
-        Set generator.spec = swagger
-        Set generator.application = applicationName
+        Set generator = ##class(dc.openapi.client.Generator).%New(swagger, applicationName, $Get(features("compile"),$$$YES))
         Set sc = generator.generate()
 
     } Catch (ex) {
@@ -133,8 +129,6 @@ ClassMethod %RemoveXDataBlock(cDef, blockName)
 
 ClassMethod translateSpec(spec) As %Status
 {
-    ;set originalSpec = {}.%FromJSON(spec.%ToJSON()) ; deep copy
-
     #dim iter As %Iterator.AbstractIterator = spec.paths.%GetIterator()
     #dim serviceLocation As %String
     #dim serviceDefinition As %Library.DynamicObject
