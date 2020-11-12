@@ -239,11 +239,8 @@ Set sc = ##class(dc.openapi.client.Spec).generateApp("petshop", spec)
 
 ```
 TSTART
-Set generator = ##class(dc.openapi.client.Generator).%New()
-Set generator.spec = spec
-Set generator.application = appName
-Set generator.compile = 0
-Set sc = generator.generate()
+Set features("compile") = 0
+Set sc = ##class(dc.openapi.client.Spec).%CreateClientApplication(appName, spec, .features)
 Do $SYSTEM.OBJ.ExportPackageToStream(appName, .xmlStream)
 TROLLBACK ; Code has been exported to xmlStream, a simple TROLLBACK delete all generated definition in code database.
 ```
