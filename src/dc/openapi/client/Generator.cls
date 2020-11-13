@@ -563,7 +563,7 @@ Method ensRequestClass(serviceDefinition As %Library.DynamicObject, value As %Li
                     
                     If parameter.type = "array" && (parameter.in = "query") && (parameter.collectionFormat = "multi") {
                         Set collection = "list"
-                    } ElseIf (parameter.in = "body" ) && (0) {
+                    } ElseIf (parameter.in = "body") && (parameter.schema.type = "array" ) {
                         Set collection = "list"
                     }
 
