@@ -560,9 +560,13 @@ Method ensRequestClass(serviceDefinition As %Library.DynamicObject, value As %Li
                     Set pType = ..getObjectScriptType(parameter)
                     Set property.Required = parameter.required
                     Set collection = ""
+                    
                     If parameter.type = "array" && (parameter.in = "query") && (parameter.collectionFormat = "multi") {
                         Set collection = "list"
+                    } ElseIf (parameter.in = "body" ) && (0) {
+                        Set collection = "list"
                     }
+
                     Set requestParamLocation = requestParamLocation _ "," _ pName _ ":" _ parameter.in _ ":" _ parameter.name _ ":" _ pType _ ":" _ collection
 
                 }
@@ -660,7 +664,7 @@ Method ensRequestClass(serviceDefinition As %Library.DynamicObject, value As %Li
 
             If parameter.type = "array" && (parameter.in = "query") && (parameter.collectionFormat = "multi") {
                 Set property.Collection = "list"
-            } ElseIf (parameter.schema.type = "array" ) {
+            } ElseIf (parameter.in = "body") && (parameter.schema.type = "array" ) {
                 Set property.Collection = "list"
             }
 
@@ -794,7 +798,7 @@ Method ensOperationMethod(serviceDefinition As %Library.DynamicObject) As %Statu
     Set mDef.ReturnType = "%Status"
     
     
-    Do mDef.Implementation.WriteLine($Char(9) _"Set pURL = """ _ ..spec.basePath _ %zCurrentData("ServiceLocation") _"""")
+    Do mDef.Implementation.WriteLine($Char(9) _"Set sc = $$$OK, pURL = """ _ ..spec.basePath _ %zCurrentData("ServiceLocation") _"""")
     Set pList = $lfs(..tmp("ensRequest", ensRequestClassName, "REQUESTPARAMLOCATION"),","), ptr = 0
     Set mParts = $$$NO
     
@@ -854,9 +858,20 @@ Method ensOperationMethod(serviceDefinition As %Library.DynamicObject) As %Statu
         } ElseIf in = "body" {
 
             If paramType [ ..packageDefinition {
-
-                Do mDef.Implementation.WriteLine($Char(9) _"Set sc = pRequest."_propertyName_".%JSONExportToStream(pHttpRequestIn.EntityBody)")
-                Do mDef.Implementation.WriteLine($Char(9) _"Quit:$$$ISERR(sc) sc")
+                If collection = "list" {
+                    
+                    Do mDef.Implementation.WriteLine($Char(9) _"Set bodyArray = [], key = """"")
+                    Do mDef.Implementation.WriteLine($Char(9) _ "For  { ")
+                    Do mDef.Implementation.WriteLine($Char(9,9) _ $$$FormatText("Set tmpValue = pRequest.%1.GetNext(.key)", propertyName))
+                    Do mDef.Implementation.WriteLine($Char(9,9) _ "Quit:key=""""")
+                    Do mDef.Implementation.WriteLine($Char(9,9) _ "Do tmpValue.%JSONExportToString(.tmpJSON)")
+                    Do mDef.Implementation.WriteLine($Char(9,9) _ "Do bodyArray.%Push({}.%FromJSON(tmpJSON))")
+                    Do mDef.Implementation.WriteLine($Char(9) _ "}")
+                    Do mDef.Implementation.WriteLine($Char(9) _ "Do bodyArray.%ToJSON(pHttpRequestIn.EntityBody)")
+                    
+                } Else {
+                    Do mDef.Implementation.WriteLine($Char(9) _"$$$QuitOnError(pRequest."_propertyName_".%JSONExportToStream(pHttpRequestIn.EntityBody))")
+                }
 
             } Else {
 
@@ -877,7 +892,7 @@ Method ensOperationMethod(serviceDefinition As %Library.DynamicObject) As %Statu
         Do mDef.Implementation.WriteLine($Char(9) _"}")
     }
 
-    Do mDef.Implementation.WriteLine($Char(9) _ "Set sc = ..Adapter.SendFormDataArray(.pHttpResponse, """_ %zCurrentData("method") _""", pHttpRequestIn , , , pURL)")
+    Do mDef.Implementation.WriteLine($Char(9) _ "$$$QuitOnError(..Adapter.SendFormDataArray(.pHttpResponse, """_ %zCurrentData("method") _""", pHttpRequestIn , , , pURL))")
     Do mDef.Implementation.WriteLine($Char(9) _ $$$FormatText("Set pResponse = ##class(%1).%New()", ..ensGenericResponseClassName))
     
     Do mDef.Implementation.WriteLine($Char(9) _ "Set sc = ..genericProcessResponse(pRequest, pResponse, """_methodName_""", sc, $Get(pHttpResponse),"""_$Get(..tmp("ensResponse", serviceDefinition.operationId))_""")")
@@ -975,17 +990,33 @@ Method restProxyMethod(serviceDefinition As %Library.DynamicObject) As %Status [
 
             If paramType [ ..packageDefinition {
 
-                Set line = "Set ensRequest.%1 = ##class(%2).%New()"
-                Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText(line, propertyName,paramType))
-                Set line = "Do ensRequest.%1.%JSONImport(%request.Content)"
+                If collection = "list" {
+                    
+                    Do mDef.Implementation.WriteLine($Char(9)_"Set bodyArray = [].%FromJSON(%request.Content), key=""""")
+                    Do mDef.Implementation.WriteLine($Char(9)_"Set iter = bodyArray.%GetIterator()")
+                    Do mDef.Implementation.WriteLine($Char(9)_"While iter.%GetNext(.key, .jsObj) {")
+                    Set line = "Set tmpObj = ##class(%1).%New()"
+                    Do mDef.Implementation.WriteLine($Char(9,9)_$$$FormatText(line, paramType))
+                    Do mDef.Implementation.WriteLine($Char(9,9)_"Do tmpObj.%JSONImport(jsObj)")
+                    Set line = "Do ensRequest.%1.Insert(tmpObj)"
+                    Do mDef.Implementation.WriteLine($Char(9,9)_$$$FormatText(line, propertyName))
+                    Do mDef.Implementation.WriteLine($Char(9)_"}")
+
+                } Else {
+
+                    Set line = "Set ensRequest.%1 = ##class(%2).%New()"
+                    Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText(line, propertyName,paramType))
+                    Set line = "Do ensRequest.%1.%JSONImport(%request.Content)"
+                    Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText(line, propertyName))
+                }
 
             } Else {
 
                 Set line = "Do ensRequest.%1.CopyFrom(%request.Content)"
-
+                Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText(line, propertyName))
             }
 
-            Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText(line, propertyName))
+            
         }
     }
     Set mDef.FormalSpec = $Extract(mDef.FormalSpec, 2, *)
@@ -1218,35 +1249,6 @@ Method getObjectScriptType(parameter As %DynamicObject) As %String
     }
     ;w !,"Return costype ",cosType,!
     Return cosType
-
-    
-    /*
-    Set OpenApiType = parameter.type
-    If parameter.in = "body"  {
-        ; ex: "#/definitions/ApiResponse"
-        Set ref = $Extract(parameter.schema."$ref", 15, *)
-        Return:ref="" "%Stream.GlobalBinary"
-        
-        Set className = ..packageDefinition _ "."_ref
-        If $$$defClassDefined(className) { 
-            Return className
-        }
-
-        Return "%Stream.GlobalBinary"
-    }
-    If OpenApiType = "integer" Return "%Integer"
-    If OpenApiType = "long" Return "%Integer"
-    If OpenApiType = "float" Return "%Numeric"
-    If OpenApiType = "double" Return "%Double"
-    If OpenApiType = "string" Return "%String"
-    If OpenApiType = "byte" Return "%Stream.GlobalBinary"
-    If OpenApiType = "binary" Return "%Stream.GlobalBinary"
-    If OpenApiType = "file" Return "%Stream.GlobalBinary"
-    If OpenApiType = "boolean" Return "%Boolean"
-    If OpenApiType = "date" Return "%String" ;--> 2020-06-13
-    If OpenApiType = "dateTime" Return "%String" ;--> 2020-06-13 https://xml2rfc.tools.ietf.org/public/rfc/html/rfc3339.html#anchor14
-    If OpenApiType = "password" Return "%String" ;--> 2020-06-13
-    Return "%String"*/
 }
 
 Method createClassParameter(name As %String, value As %String) As %Dictionary.ParameterDefinition

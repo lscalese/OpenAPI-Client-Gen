@@ -186,6 +186,40 @@ curl --location --request DELETE 'http://localhost:52795/petshoprest/pet/456789'
 --header 'api-key: special-key'
 ```
 
+### Create User 
+```
+curl --location --request POST 'http://localhost:52795/petshoprest/user/createWithArray' \
+--header 'Content-Type: application/json' \
+--data-raw '[
+  {
+    "id": 14835440378,
+    "username": "contest01",
+    "firstName": "contest02",
+    "lastName": "contest",
+    "email": "string",
+    "password": "string",
+    "phone": "string",
+    "userStatus": 0
+  },
+  {
+    "id": 14835440379,
+    "username": "contest02",
+    "firstName": "contest02",
+    "lastName": "contest02",
+    "email": "string",
+    "password": "string",
+    "phone": "string",
+    "userStatus": 0
+  }
+]'
+```
+
+### Get User by name
+
+```
+curl --location --request GET 'http://localhost:52795/petshoprest/user/contest02'
+```
+
 Now you can check your production and the message viewer.
 
 <img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Production-MessageViewer-2.png">
