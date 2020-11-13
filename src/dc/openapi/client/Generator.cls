@@ -16,7 +16,7 @@ Parameter PKGMODEL = "model";
 /// Grongier.OpenApi.Definition compatibility
 Parameter PKGDEF = "model.Definition";
 
-Parameter CFLAGS = "ck";
+Parameter CFLAGS = "ck-d";
 
 Property spec As %DynamicObject;
 
@@ -559,7 +559,11 @@ Method ensRequestClass(serviceDefinition As %Library.DynamicObject, value As %Li
                     Set pName = parameter.in _ ..name(parameter.name)
                     Set pType = ..getObjectScriptType(parameter)
                     Set property.Required = parameter.required
-                    Set requestParamLocation = requestParamLocation _ "," _ pName _ ":" _ parameter.in _ ":" _ parameter.name _ ":" _ pType
+                    Set collection = ""
+                    If parameter.type = "array" && (parameter.in = "query") && (parameter.collectionFormat = "multi") {
+                        Set collection = "list"
+                    }
+                    Set requestParamLocation = requestParamLocation _ "," _ pName _ ":" _ parameter.in _ ":" _ parameter.name _ ":" _ pType _ ":" _ collection
 
                 }
                 Set keyParam = ""
@@ -654,10 +658,16 @@ Method ensRequestClass(serviceDefinition As %Library.DynamicObject, value As %Li
             Set property.Type = ..getObjectScriptType(parameter)
             Set property.Required = parameter.required
 
+            If parameter.type = "array" && (parameter.in = "query") && (parameter.collectionFormat = "multi") {
+                Set property.Collection = "list"
+            } ElseIf (parameter.schema.type = "array" ) {
+                Set property.Collection = "list"
+            }
+
             Set:parameter.description'="" property.Description =  $Replace(parameter.description, $$$NL, "<br/>" _ $$$NL )
             Do cDef.Properties.Insert(property)
 
-            Set requestParamLocation = requestParamLocation _ "," _ property.Name _ ":" _ parameter.in _ ":" _ parameter.name _ ":" _ property.Type
+            Set requestParamLocation = requestParamLocation _ "," _ property.Name _ ":" _ parameter.in _ ":" _ parameter.name _ ":" _ property.Type_":" _ property.Collection
 
         }
         Set keyParam = ""
@@ -797,12 +807,23 @@ Method ensOperationMethod(serviceDefinition As %Library.DynamicObject) As %Statu
         Set in = $Piece(propertyInfo, ":", 2)
         Set parameterName = $Piece(propertyInfo, ":", 3)
         Set paramType = $Piece(propertyInfo, ":", 4)
+        Set collection = $Piece(propertyInfo, ":", 5)
 
         Set ..tmp("RQPARAMETERS", $Zcvt(%zCurrentData("method"),"U"), serviceDefinition.operationId, in, parameterName) = propertyName
 
         If in = "query" {
+            If collection = "list" {
 
-            Do mDef.Implementation.WriteLine($Char(9) _ "Do pHttpRequestIn.SetParam(""" _ parameterName _ """, pRequest." _ propertyName _")")
+                Do mDef.Implementation.WriteLine($Char(9) _ "Set key = """"")
+                Do mDef.Implementation.WriteLine($Char(9) _ "For  { ")
+                Do mDef.Implementation.WriteLine($Char(9,9) _ $$$FormatText("Set tmpValue = pRequest.%1.GetNext(.key)", propertyName))
+                Do mDef.Implementation.WriteLine($Char(9,9) _ "Quit:key=""""")
+                Do mDef.Implementation.WriteLine($Char(9,9) _ $$$FormatText("Do pHttpRequestIn.SetParam(""%1"", tmpValue, key)", parameterName))
+                Do mDef.Implementation.WriteLine($Char(9) _ "}")
+
+            } Else {
+                Do mDef.Implementation.WriteLine($Char(9) _ "Do pHttpRequestIn.SetParam(""" _ parameterName _ """, pRequest." _ propertyName _")")
+            }
 
         } ElseIf in = "path" {
 
@@ -899,6 +920,8 @@ Method restProxyMethod(serviceDefinition As %Library.DynamicObject) As %Status [
     #dim in As %String
     #dim parameterName As %String
     #dim paramType As %String
+
+    #define ListQryLine "Set k=""""  For  { Set k=$Order(%request.Data(""%2"", k), 1, vData) Quit:k=""""  Do ensRequest.%1.Insert(vData) }"
     
     While $Listnext(pList, ptr, propertyInfo) {            
 
@@ -906,11 +929,15 @@ Method restProxyMethod(serviceDefinition As %Library.DynamicObject) As %Status [
         Set in = $Piece(propertyInfo, ":", 2)
         Set parameterName = $Piece(propertyInfo, ":", 3)
         Set paramType = $Piece(propertyInfo, ":", 4)
-
+        Set collection = $Piece(propertyInfo, ":", 5)
 
         If in = "query" {
-
-            Set line = "Set ensRequest.%1 = $Get(%request.Data(""%2"",1))"
+            
+            If collection = "list" {
+                Set line = $$$ListQryLine
+            } Else {
+                Set line = "Set ensRequest.%1 = $Get(%request.Data(""%2"",1))"
+            }
             Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText(line, propertyName, parameterName))
 
         } ElseIf in = "path" {
@@ -935,8 +962,11 @@ Method restProxyMethod(serviceDefinition As %Library.DynamicObject) As %Status [
                 Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText(line, propertyName))
 
             } Else {
-
-                Set line = "Set ensRequest.%1 = $Get(%request.Data(""%2"",1))"
+                If collection = "list" {
+                    Set line = $$$ListQryLine
+                } Else {
+                    Set line = "Set ensRequest.%1 = $Get(%request.Data(""%2"",1))"
+                }
                 Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText(line, propertyName, parameterName))
 
             }
@@ -1174,6 +1204,23 @@ ClassMethod getResponseDoc(responses As %DynamicObject) As %String
 
 Method getObjectScriptType(parameter As %DynamicObject) As %String
 {
+   
+    
+    #define CosType(%parameter) $case(%parameter.type, "integer":"%Integer","long":"%Integer","float":"%Numeric","double":"%Double","string":"%String","byte":"%Stream.GlobalBinary","file":"%Stream.GlobalBinary","boolean":"%Boolean","date":"%String","dateTime":"%String","password":"%String","":..name($Replace($s(%parameter.schema."$ref"'="":%parameter.schema."$ref",1:%parameter."$ref"),"#/definitions/","")),:"%String")
+
+    Set cosType = $Select(parameter.type="array": $$$CosType(parameter.items), parameter.schema.type="array": $$$CosType(parameter.schema.items),1:$$$CosType(parameter))
+
+    If ($Extract(cosType, 1) '= "%") {
+        Set cosType = ..packageDefinition _ "." _ cosType
+        ;Write !,cosType,!
+        ;zw parameter
+        Set:'$$$defClassDefined(cosType) cosType = "%Stream.GlobalBinary"
+    }
+    ;w !,"Return costype ",cosType,!
+    Return cosType
+
+    
+    /*
     Set OpenApiType = parameter.type
     If parameter.in = "body"  {
         ; ex: "#/definitions/ApiResponse"
@@ -1199,7 +1246,7 @@ Method getObjectScriptType(parameter As %DynamicObject) As %String
     If OpenApiType = "date" Return "%String" ;--> 2020-06-13
     If OpenApiType = "dateTime" Return "%String" ;--> 2020-06-13 https://xml2rfc.tools.ietf.org/public/rfc/html/rfc3339.html#anchor14
     If OpenApiType = "password" Return "%String" ;--> 2020-06-13
-    Return "%String"
+    Return "%String"*/
 }
 
 Method createClassParameter(name As %String, value As %String) As %Dictionary.ParameterDefinition
