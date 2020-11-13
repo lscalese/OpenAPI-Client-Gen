@@ -65,55 +65,69 @@ We use curl command line in this sample.
   
 | Generated Classes | Description |
 | --- | --- |
-| petshop.msg.GenericResponse | Generic Ens.Response |
-| petshop.bo.Operation | Business Operation |
-| petshop.bp.Process | Business Process |
 | petshop.Production | Production configuration |
-| petshop.rest.Projection | Projection to create CSP proxy Rest web application at compile time |
-| petshop.bs.ProxyService | Empty Business Service used by proxy web application |
-| petshop.rest.REST | %CSP.REST class for proxy web application |
-| petshop.spec | Swagger specification used by the generator |
-| petshop.Utils | utils... |
-| petshop.msg.addPetRequest | Ens.Request for addPet |
-| petshop.bs.addPetService | addPet Business Service template |
-| petshop.msg.createUserRequest | Ens.Request for createUser |
-| petshop.bs.createUserService | createUser Business Service template |
-| petshop.msg.createUsersWithArrayInputRequest | Ens.Request for createUsersWithArrayInput |
-| petshop.bs.createUsersWithArrayInputService | reateUsersWithArrayInput Business Service template |
-| petshop.msg.createUsersWithListInputRequest | Ens.Request for createUsersWithListInput |
-| petshop.bs.createUsersWithListInputService | createUsersWithListInput Business Service template |
-| petshop.msg.deleteOrderRequest | Ens.Request for deleteOrder |
-| petshop.bs.deleteOrderService | deleteOrder Business Service template|
-| petshop.msg.deletePetRequest | Ens.Request for deletePet |
-| petshop.bs.deletePetService | deletePet Business Service template|
-| petshop.msg.deleteUserRequest | Ens.Request for deleteUser |
-| petshop.bs.deleteUserService | deleteUser Business Service template |
-| petshop.msg.findPetsByStatusRequest | Ens.Request for findPetsByStatus |
-| petshop.bs.findPetsByStatusService | findPetsByStatus Business Service template |
-| petshop.msg.findPetsByTagsRequest | Ens.Request for findPetsByTags |
-| petshop.bs.findPetsByTagsService | findPetsByTags Business Service template |
-| petshop.msg.getInventoryRequest | Ens.Request for getInventory |
-| petshop.bs.getInventoryService | getInventory Business Service template |
-| petshop.msg.getOrderByIdRequest | Ens.Request for getOrderById |
-| petshop.bs.getOrderByIdService | getOrderById Business Service template |
-| petshop.msg.getPetByIdRequest | Ens.Request for getPetById |
-| petshop.bs.getPetByIdService | getPetById Business Service template|
-| petshop.msg.getUserByNameRequest | Ens.Request for getUserByName |
-| petshop.bs.getUserByNameService | getUserByName Business Service template|
-| petshop.msg.loginUserRequest | Ens.Request for loginUser |
-| petshop.bs.loginUserService | loginUser Business Service template |
-| petshop.msg.logoutUserRequest | Ens.Request for logoutUser |
-| petshop.bs.logoutUserService | logoutUser Business Service template |
-| petshop.msg.placeOrderRequest | Ens.Request for placeOrder |
-| petshop.bs.placeOrderService | placeOrder Business Service template |
-| petshop.msg.updatePetRequest | Ens.Request for updatePet |
-| petshop.bs.updatePetService | updatePet Business Service template |
-| petshop.msg.updatePetWithFormRequest | Ens.Request for updatePetWithForm |
-| petshop.bs.updatePetWithFormService | updatePetWithForm Business Service template |
-| petshop.msg.updateUserRequest | Ens.Request for updateUser |
-| petshop.bs.updateUserService | updateUser Business Service template |
-| petshop.msg.uploadFileRequest | Ens.Request for uploadFile |
-| petshop.bs.uploadFileService | uploadFile Business Service template |
+| petshop.Utils | Utils class |
+| petshop.bo.Operation | Busniness Operation |
+| petshop.bp.Process | Generic Business Process |
+| petshop.bs.ProxyService | Empty class to use for proxy rest application |
+| petshop.bs.addPetService | addPetService Business Service |
+| petshop.bs.createUserService | createUserService Business Service |
+| petshop.bs.createUsersWithArrayInputService | createUsersWithArrayInputService Business Service |
+| petshop.bs.createUsersWithListInputService | createUsersWithListInputService Business Service |
+| petshop.bs.deleteOrderService | deleteOrderService Business Service |
+| petshop.bs.deletePetService | deletePetService Business Service |
+| petshop.bs.deleteUserService | deleteUserService Business Service |
+| petshop.bs.findPetsByStatusService | findPetsByStatusService Business Service |
+| petshop.bs.findPetsByTagsService | findPetsByTagsService Business Service |
+| petshop.bs.getInventoryService | findPetsByTagsService Business Service |
+| petshop.bs.getOrderByIdService | getOrderByIdService Business Service |
+| petshop.bs.getPetByIdService | getPetByIdService Business Service |
+| petshop.bs.getUserByNameService | getUserByNameService Business Service |
+| petshop.bs.loginUserService | loginUserService Business Service |
+| petshop.bs.logoutUserService | logoutUserService Business Service |
+| petshop.bs.placeOrderService | placeOrderService Business Service |
+| petshop.bs.updatePetService | updatePetService Business Service |
+| petshop.bs.updatePetWithFormService | updatePetWithFormService Business Service |
+| petshop.bs.updateUserService | updateUserService Business Service |
+| petshop.bs.uploadFileService | uploadFileService Business Service |
+| petshop.model.Definition.ApiResponse | ApiResponse model included in Request or response message |
+| petshop.model.Definition.Category | Category model included in Request or response message |
+| petshop.model.Definition.Order | Order model included in Request or response message |
+| petshop.model.Definition.Pet |  Petmodel included in Request or response message |
+| petshop.model.Definition.Tag | Tag model included in Request or response message |
+| petshop.model.Definition.User | User model included in Request or response message |
+| petshop.model.spec | Swagger 2.0 used for generate all classes |
+| petshop.msg.GenericResponse | Generic Ens.Response |
+| petshop.msg.ParsedResponse | Super class of models (petshop.mode.Definition) |
+| petshop.msg.addPetRequest | addPet Ens.Request |
+| petshop.msg.createUserRequest | createUser Ens.Request |
+| petshop.msg.createUsersWithArrayInputRequest | reateUsersWithArrayInput Ens.Request |
+| petshop.msg.createUsersWithListInputRequest | createUsersWithListInput Ens.Request |
+| petshop.msg.deleteOrderRequest | deleteOrder Ens.Request |
+| petshop.msg.deletePetRequest | deletePet Ens.Request |
+| petshop.msg.deleteUserRequest | deleteUser Ens.Request |
+| petshop.msg.findPetsByStatusRequest | findPetsByStatus Ens.Request |
+| petshop.msg.findPetsByStatusResponse | findPetsByStatus Ens.Response |
+| petshop.msg.findPetsByTagsRequest | indPetsByTags Ens.Request |
+| petshop.msg.findPetsByTagsResponse | indPetsByTags Ens.Response |
+| petshop.msg.getInventoryRequest | getInventory Ens.Request |
+| petshop.msg.getOrderByIdRequest | getOrderById Ens.Request |
+| petshop.msg.getOrderByIdResponse | etOrderById Ens.Response |
+| petshop.msg.getPetByIdRequest | getPetById Ens.Request |
+| petshop.msg.getPetByIdResponse | getPetById Ens.Response |
+| petshop.msg.getUserByNameRequest | getUserByName Ens.Request |
+| petshop.msg.getUserByNameResponse | getUserByName Ens.Response |
+| petshop.msg.loginUserRequest | loginUser Ens.Request |
+| petshop.msg.logoutUserRequest | logoutUser Ens.Request |
+| petshop.msg.placeOrderRequest | placeOrder Ens.Request |
+| petshop.msg.placeOrderResponse | placeOrder Ens.Response |
+| petshop.msg.updatePetRequest | updatePet Ens.Request |
+| petshop.msg.updatePetWithFormRequest | updatePetWithForm Ens.Request |
+| petshop.msg.updateUserRequest | updateUser Ens.Request |
+| petshop.msg.uploadFileRequest | uploadFile Ens.Request |
+| petshop.msg.uploadFileResponse | ploadFile Ens.Response |
+| petshop.rest.Projection | Projection to setting up Proxy REST application at compile time |
+| petshop.rest.REST | Proxy REST application |
   
   
 ### Configure a production  
@@ -178,6 +192,10 @@ curl --location --request GET 'http://localhost:52795/petshoprest/pet/456789'
 ```
 curl --location --request GET 'http://localhost:52795/petshoprest/pet/findByStatus?status=pending'
 ```
+
+Important: Sometimes, there is invalid data on the server ... A parse error can occured due to a required  
+field in the specification not returned by the server.  
+
 ### Delete pet
 
 ```
