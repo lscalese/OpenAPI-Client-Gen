@@ -94,9 +94,10 @@ ClassMethod %CreateClientApplication(applicationName As %String, swagger As %Dyn
 
         Set formatter=##class(%JSON.Formatter).%New()
         
+        ; work around for an open problem with the model generation library
+        ; https://github.com/grongierisc/objectscript-openapi-definition/issues/4
         Do ..translateSpec(.swagger)
-        ;Set ^CacheTempLsc = swagger.%ToJSON()
-
+        
         $$$ThrowOnError(formatter.FormatToString(swagger, .swaggerString))
         $$$ThrowOnError(xData.Data.Write(swaggerString))
         $$$ThrowOnError(cDef.XDatas.Insert(xData))
