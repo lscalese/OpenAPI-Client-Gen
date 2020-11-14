@@ -379,7 +379,7 @@ Method restProxy() As %Status [ Private ]
     
         Merge ^oddDEF(utilsClass) = ^oddDEF("dc.openapi.client.Utils")
         Set ^oddDEF(utilsClass, 1) = utilsClass
-        ; class copy, explicit copy is needed
+        ; class copy, explicit compile is needed
         $$$QuitOnError($SYSTEM.OBJ.Compile(utilsClass, "ck-d"))
     }
 
