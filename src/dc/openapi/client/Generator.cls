@@ -16,7 +16,7 @@ Parameter PKGMODEL = "model";
 /// Grongier.OpenApi.Definition compatibility
 Parameter PKGDEF = "model.Definition";
 
-Parameter CFLAGS = "ck-d";
+Parameter CFLAGS = "cku-d";
 
 Property spec As %DynamicObject;
 
@@ -153,10 +153,10 @@ Method generate() As %Status
         $$$ThrowOnError(..restProxyURLMAP())
        
         If ..compile {
-            Set sc = $system.OBJ.Compile(..ensOperationClassName , ..#CFLAGS)
+            
+            Set sc = $system.OBJ.CompilePackage(..application, ..#CFLAGS)
+
         }
-
-
         
     } Catch (ex) {
         Set sc = ex.AsStatus()
@@ -206,7 +206,6 @@ Method models() As %Status [ Private ]
         }
     }
 
-    set sc = $system.OBJ.CompilePackage(..packageDefinition, "cku-d")
     Return sc
 }
 
@@ -224,9 +223,6 @@ Method ensGenericResponse() As %Status [ Private ]
         
         $$$QuitOnError(parsedResponseClass.%Save())
         
-        If ..compile { 
-            $$$QuitOnError($SYSTEM.OBJ.Compile(..parsedReponseClassName, ..#CFLAGS))
-        }
     }
 
     Set genericResponseClassName = ..ensGenericResponseClassName
@@ -289,12 +285,6 @@ Method ensGenericResponse() As %Status [ Private ]
     Do cDef.Properties.Insert(property)
     
     $$$QuitOnError(cDef.%Save())
-
-    If ..compile { 
-    
-        $$$QuitOnError($SYSTEM.OBJ.Compile(..ensGenericResponseClassName, ..#CFLAGS)) 
-    
-    }
 
     Return sc
 }
@@ -389,8 +379,8 @@ Method restProxy() As %Status [ Private ]
     
         Merge ^oddDEF(utilsClass) = ^oddDEF("dc.openapi.client.Utils")
         Set ^oddDEF(utilsClass, 1) = utilsClass
-
-        $$$QuitOnError($SYSTEM.OBJ.Compile(utilsClass, ..#CFLAGS)) 
+        ; class copy, explicit copy is needed
+        $$$QuitOnError($SYSTEM.OBJ.Compile(utilsClass, "ck-d"))
     }
 
     Set projectionClassName = ..packageRest _ ".Projection"
@@ -451,11 +441,6 @@ Method restProxy() As %Status [ Private ]
         
         $$$QuitOnError(projectionClass.%Save())
 
-        If ..compile { 
-    
-            $$$QuitOnError($SYSTEM.OBJ.Compile(projectionClassName, ..#CFLAGS)) 
-    
-        }
     }
     
 
@@ -520,12 +505,6 @@ Method ensResponseClass(serviceDefinition As %Library.DynamicObject) As %Status 
     Do cDef.Parameters.Insert(..createClassParameter("MODELTYPE", parsedResponse.Type))
 
     $$$QuitOnError(cDef.%Save())
-
-    If ..compile {
-        
-        $$$QuitOnError($SYSTEM.OBJ.Compile(className, ..#CFLAGS))
-
-    }
 
     Set ..tmp("ensResponse", serviceDefinition.operationId) = className
     Set ..tmp("ensResponse200", serviceDefinition.operationId) = parsedResponse.Type
@@ -681,12 +660,6 @@ Method ensRequestClass(serviceDefinition As %Library.DynamicObject, value As %Li
     Set ..tmp("ensRequest", className, "REQUESTPARAMLOCATION") = requestParamLocation
 
     $$$QuitOnError(cDef.%Save())
-
-    If ..compile { 
-        
-        $$$QuitOnError($system.OBJ.Compile(className, ..#CFLAGS))
-
-    }
     
     Return sc
 }
@@ -763,12 +736,6 @@ Method ensServiceClass(serviceDefinition As %Library.DynamicObject) As %Status [
 
     
     $$$QuitOnError(cDef.%Save())
-
-    If ..compile {
-        
-        $$$QuitOnError($system.OBJ.Compile(serviceClassName, ..#CFLAGS))
-
-    }
 
     Quit sc
 }
@@ -1053,12 +1020,6 @@ Method ensProxyService() As %Status [ Private ]
 
     $$$QuitOnError(cDef.%Save())
     
-    If ..compile {
-        
-        $$$QuitOnError($system.OBJ.Compile(..ensProxyServiceClassName, ..#CFLAGS))
-
-    }
-    
     Return sc
 }
 
@@ -1127,11 +1088,6 @@ Method ensProcessClass() As %Status [ Private ]
 
     Set sc = cDef.%Save()
 
-    If ..compile {
-
-        $$$QuitOnError($SYSTEM.OBJ.Compile(..ensProcessClassName, ..#CFLAGS))
-    }
-
     Return sc
 }
 
@@ -1148,11 +1104,6 @@ Method restProxyURLMAP(serviceDefinition As %Library.DynamicObject) As %Status
 
     $$$QuitOnError(cDef.%Save())
 
-    If ..compile {
-
-        $$$QuitOnError($system.OBJ.Compile(restClassname, ..#CFLAGS))
-
-    }
     Return sc
 }
 
@@ -1213,12 +1164,6 @@ Method ensProduction() As %Status
     Do cDef.XDatas.Insert(xData)
 
     $$$QuitOnError(cDef.%Save())
-
-    If ..compile {
-        
-        $$$QuitOnError($SYSTEM.OBJ.Compile(productionClassName, ..#CFLAGS))
-
-    }
 
     Return sc
 }
