@@ -147,13 +147,13 @@ Method generate() As %Status
         $$$ThrowOnError(..ensProxyService())    ; Generate empty Business Service class for proxy usage.
         $$$ThrowOnError(..messageMap())         ; Generate XDATA Message Map bloc For Business Operation class.
         $$$ThrowOnError(..ensProcessClass())    ; Generate Generic Business Process class.
-        $$$ThrowOnError(..ensProduction())
+        $$$ThrowOnError(..ensProduction())      ; Generation Production configuration class.
         
         
         $$$ThrowOnError(..restProxyURLMAP())
        
         If ..compile {
-            Set sc = $system.OBJ.Compile(..ensOperationClassName ,"ck")
+            Set sc = $system.OBJ.Compile(..ensOperationClassName , ..#CFLAGS)
         }
 
 
@@ -202,10 +202,11 @@ Method models() As %Status [ Private ]
 
             Set class.Super = "%Persistent,%XML.Adaptor,"_class.Super
             $$$ThrowOnError(class.%Save())
-            $$$ThrowOnError($SYSTEM.OBJ.Compile(key, ..#CFLAGS))
-
+        
         }
     }
+
+    set sc = $system.OBJ.CompilePackage(..packageDefinition, "cku-d")
     Return sc
 }
 
