@@ -403,14 +403,18 @@ Method restProxy() As %Status [ Private ]
         
         Do projectionClass.Methods.Insert(mDef)
 
+        Set restAppName = "/"_$zcvt($tr(..application,"."),"l")_"rest"
+
         Set mDef = ##class(%Dictionary.MethodDefinition).%New()
 
         Set mDef.Name = "RemoveProjection"
         Set mDef.FormalSpec = "cls:%String,&params,recompile:%Boolean"
         Set mDef.ClassMethod = $$$YES
         Set mDef.ReturnType = "%Status"
-        
-        Do mDef.Implementation.WriteLine($c(9)_ "Return $$$OK")
+        Do mDef.Implementation.WriteLine($Char(9)_"New $namespace")
+        Do mDef.Implementation.WriteLine($Char(9)_"Set $namespace = ""%SYS""")
+        Do mDef.Implementation.WriteLine($Char(9)_"if '##class(Security.Applications).Exists("""_restAppName_""") { Quit $$$OK }" )
+        Do mDef.Implementation.WriteLine($Char(9)_"Return ##class(Security.Applications).Delete("""_restAppName_""")")
         
         Do projectionClass.Methods.Insert(mDef)
 
@@ -418,7 +422,7 @@ Method restProxy() As %Status [ Private ]
         Set mDef.Name = "%CreateWebApplication"
         Set mDef.ClassMethod = $$$YES
 
-        Set restAppName = "/"_$zcvt($tr(..application,"."),"l")_"rest"
+        
         Do mDef.Implementation.WriteLine($Char(9)_"New $namespace")
         Do mDef.Implementation.WriteLine($Char(9)_"Set oldNs = $namespace")
         Do mDef.Implementation.WriteLine($Char(9)_"Set $namespace = ""%SYS""")
