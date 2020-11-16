@@ -115,7 +115,7 @@ ClassMethod %CreateClientApplication(applicationName As %String, swagger As %Dyn
         ; work around for an open problem with the model generation library
         ; https://github.com/grongierisc/objectscript-openapi-definition/issues/4
         Do ..translateSpec(.swagger)
-        
+
         $$$ThrowOnError(formatter.FormatToString(swagger, .swaggerString))
         $$$ThrowOnError(xData.Data.Write(swaggerString))
         $$$ThrowOnError(cDef.XDatas.Insert(xData))
@@ -156,8 +156,26 @@ ClassMethod translateSpec(spec) As %Status
     
     While iter.%GetNext(.serviceLocation , .value ) {
         Set methodIter = value.%GetIterator()
+
         While methodIter.%GetNext(.method , .serviceDefinition ) {
-            Set serviceDefinition.operationId = ..translateName(serviceDefinition.operationId)
+
+            ; issue #15 https://github.com/lscalese/OpenAPI-Client-Gen/issues/15
+            If serviceDefinition.operationId = "" {
+                ; operation Identifier
+                Set operationIdentifier = ..translateName(..generateOperationId(method, serviceLocation))
+                
+                If '$Data(usedIdentifier(" "_operationIdentifier)) {
+                    Set usedIdentifier(" "_operationIdentifier) = 1
+                } Else {
+                    Set usedIdentifier(" "_operationIdentifier) = usedIdentifier(" "_operationIdentifier) +1 
+                    Set operationIdentifier = operationIdentifier _ usedIdentifier(" "_operationIdentifier)
+                }
+                
+                Set serviceDefinition.operationId = operationIdentifier
+
+            } Else {
+                Set serviceDefinition.operationId = ..translateName(serviceDefinition.operationId)
+            }
 
             If $ISOBJECT(serviceDefinition.responses) {
                 Set iterResp = serviceDefinition.responses.%GetIterator()
@@ -212,6 +230,17 @@ ClassMethod translateSpec(spec) As %Status
 ClassMethod translateName(name As %String) As %IO.StringStream
 {
     Return $Translate(name, "_", "")
+}
+
+ClassMethod generateOperationId(method As %String, path As %String) As %String
+{
+    Set list = $LFS(path, "/"), ptr = 0, id = ""
+    
+    While $ListNext(list, ptr, item) {
+        Set:$Extract(item, 1)'="{" id = id _ item  ; exclude path parameter
+    }
+    
+    Return method_id
 }
 
 }

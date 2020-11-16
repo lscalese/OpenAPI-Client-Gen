@@ -94,7 +94,7 @@ Method %OnNew(spec As %Library.DynamicObject, application As %String, compile As
 
 ClassMethod name(name As %String) As %String [ CodeMode = expression ]
 {
-$Translate(name, "_","")
+$Translate(name, "$_","")
 }
 
 Method generate() As %Status
@@ -126,7 +126,9 @@ Method generate() As %Status
             
             Set methodIter = value.%GetIterator()
             While methodIter.%GetNext(.method , .serviceDefinition ) {
-            
+                
+                continue:method="parameters"
+
                 Set %zCurrentData("method") = method
 
                 $$$ThrowOnError(..ensResponseClass(serviceDefinition))          ; Generate Ens.Response class.
@@ -467,6 +469,8 @@ Method restProxy() As %Status [ Private ]
 Method ensResponseClass(serviceDefinition As %Library.DynamicObject) As %Status [ Private ]
 {
     #dim sc As %Status = $$$OK
+
+    Quit:'$Isobject(serviceDefinition.responses) sc
     
     Set r200 = serviceDefinition.responses."200"
     
@@ -531,9 +535,9 @@ Method ensRequestClass(serviceDefinition As %Library.DynamicObject, value As %Li
         } Else {
             
             Set requestParamLocation =  "accept:header:accept:%String"
-            Set parametersObject = $Select(serviceDefinition.parameters'="":serviceDefinition.parameters, value.parameters'="":value.parameters,1:"")
+            Set parametersObject = $Select($ISOBJECT(serviceDefinition.parameters):serviceDefinition.parameters, $ISOBJECT(value.parameters):value.parameters,1:"")
             
-            If parametersObject '= "" {
+            If $Isobject(parametersObject) {
 
                 Set iterParam = parametersObject.%GetIterator()
                 
@@ -580,7 +584,7 @@ Method ensRequestClass(serviceDefinition As %Library.DynamicObject, value As %Li
     Set property.Type = "%String"
     Set description = ""
 
-    If serviceDefinition.consumes '= "" {
+    If $Isobject(serviceDefinition.consumes)  {
         Set consumesList = $lfs($Translate(serviceDefinition.consumes.%ToJSON(), "[]""",""),","), ptr = 0
         Set ..tmp(%zCurrentData("ServiceLocation"), %zCurrentData("method"),"consume")=consumesList
         Set description = "consume : <ul>" _ $$$NL
@@ -599,9 +603,9 @@ Method ensRequestClass(serviceDefinition As %Library.DynamicObject, value As %Li
 
     Set producesObject = ""
 
-    If serviceDefinition.produces '= "" {
+    If $Isobject(serviceDefinition.produces) {
         Set producesObject = serviceDefinition.produces
-    } ElseIf ..spec.produces '= "" {
+    } ElseIf $Isobject(..spec.produces) {
         Set producesObject = ..spec.produces
     }
 
@@ -610,7 +614,7 @@ Method ensRequestClass(serviceDefinition As %Library.DynamicObject, value As %Li
     Set property.Type = "%String"
     Set description=""
 
-    If producesObject '= "" {
+    If $Isobject(producesObject) {
         
         Set producesList = $lfs($Translate(producesObject.%ToJSON(), "[]""",""),","), ptr = 0
         Set ..tmp(%zCurrentData("ServiceLocation"), %zCurrentData("method"),"produce")=producesList
@@ -631,21 +635,22 @@ Method ensRequestClass(serviceDefinition As %Library.DynamicObject, value As %Li
     /* All parameters*/
     
     Set parametersObject = ""
-    If serviceDefinition.parameters '= "" {
+    If $Isobject(serviceDefinition.parameters) {
         Set parametersObject = serviceDefinition.parameters
-    } ElseIf value.parameters '= "" {
+    } ElseIf $Isobject(value.parameters) {
         Set parametersObject = value.parameters
     }
 
-    If parametersObject '= "" {
+    If $Isobject(parametersObject) {
         Set iterParam = parametersObject.%GetIterator()
-        
+        Set keyParam = ""
+
         While iterParam.%GetNext(.keyParam, .parameter) {
             Set property = ##class(%Dictionary.PropertyDefinition).%New()
             Set property.Name = parameter.in _ ..name(parameter.name)
             Set property.Type = ..getObjectScriptType(parameter)
             Set property.Required = parameter.required
-
+            
             If parameter.type = "array" && (parameter.in = "query") && (parameter.collectionFormat = "multi") {
                 Set property.Collection = "list"
             } ElseIf (parameter.in = "body") && (parameter.schema.type = "array" ) {
@@ -1193,11 +1198,8 @@ Method getObjectScriptType(parameter As %DynamicObject) As %String
 
     If ($Extract(cosType, 1) '= "%") {
         Set cosType = ..packageDefinition _ "." _ cosType
-        ;Write !,cosType,!
-        ;zw parameter
         Set:'$$$defClassDefined(cosType) cosType = "%Stream.GlobalBinary"
     }
-    ;w !,"Return costype ",cosType,!
     Return cosType
 }
 
