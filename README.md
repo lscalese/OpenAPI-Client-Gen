@@ -173,6 +173,10 @@ curl --location --request POST 'http://localhost:52795/petshoprest/pet' \
 }'
 ```
 
+The production runs in async mode, so the rest proxy application does not wait for the response.  
+Don't wait a body response.  
+This behavior could be edited, but basically, Interoperability production uses async mode.  
+
 ### Upload an image
 ```
 curl --location --request POST 'http://localhost:52795/petshoprest/pet/456789/uploadImage' \
