@@ -15,17 +15,35 @@ XData OpenAPI [ MimeType = application/json ]
 /// ex: Set sc = ##class(dc.openapi.client.Spec).generateApp("petstore", "https://petstore.swagger.io:443/v2/swagger.json")
 ClassMethod generateApp(appName As %String, spec) As %Status
 {
-    If $Isobject(spec) {
-        If spec.%IsA("%Stream.Object") {
-            Set spec = {}.%FromJSON(.spec)
-        }
-    } Else {
-        If $ZCONVERT($Extract(spec, 1, 4), "l") = "http" {
-            Set spec = ..loadSpecFromUrl(spec)
+    Set sc = $$$OK
+    Try {
+        If $Isobject(spec) {
+            If spec.%IsA("%Stream.Object") {
+                Set spec = {}.%FromJSON(.spec)
+            }
         } Else {
-            Set spec = ..loadSpecFromFile(spec)
+            If $ZCONVERT($Extract(spec, 1, 4), "l") = "http" {
+                Set spec = ..loadSpecFromUrl(spec)
+            } ElseIf ##class(%File).Exists(spec) {
+                Set spec = ..loadSpecFromFile(spec)
+            } Else {
+                $$$ThrowStatus($$$ERROR($$$GeneralError, $$$FormatText("Swagger specification not found %1.", spec)))
+            }
+        }
+    } Catch(ex) {
+        Set sc = ex.AsStatus()
+        Set msg = $SYSTEM.Status.GetOneErrorText(sc)
+        If msg [ "Parsing err" {
+            Set sc = $$$ERROR($$$GeneralError, "Currently only JSON format is supported.")
         }
     }
+
+    Quit:$$$ISERR(sc) sc
+
+    If '$Isobject(spec) || (spec.swagger '= "2.0" ) {
+        Quit $$$ERROR($$$GeneralError, "Not a Swagger 2.0 file.")
+    }
+
 
     Return ..%CreateClientApplication(appName, spec)
 }
