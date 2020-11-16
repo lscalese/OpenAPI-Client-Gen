@@ -16,7 +16,7 @@ Parameter PKGMODEL = "model";
 /// Grongier.OpenApi.Definition compatibility
 Parameter PKGDEF = "model.Definition";
 
-Parameter CFLAGS = "cku-d";
+Parameter CFLAGS = "cku";
 
 Property spec As %DynamicObject;
 
@@ -464,9 +464,83 @@ Method restProxy() As %Status [ Private ]
     Return cDef.%Save()
 }
 
-/// Generate response class for a HTTP Status code 200<br/>
-/// 
 Method ensResponseClass(serviceDefinition As %Library.DynamicObject) As %Status [ Private ]
+{
+    #dim sc As %Status = $$$OK
+
+    Quit:'$Isobject(serviceDefinition.responses) sc
+
+    Set iter = serviceDefinition.responses.%GetIterator()
+
+    Set tPropInfo = "", cnt = 0
+
+    While iter.%GetNext(.HttpStatus, .httpStatusDef) {
+        
+        Set array = $$$NO
+        
+        If httpStatusDef.schema.type="array" {
+
+            Set ref = $Extract(httpStatusDef.schema.items."$ref", 15, *), array = $$$YES
+
+        } Else {
+
+            Set ref = $Extract(httpStatusDef.schema."$ref", 15, *)
+
+        }
+
+        If ref '= "" {
+            Set $List(tPropInfo, $Increment(cnt)) = HttpStatus _ ":" _ ref _ ":" _ array _ ":"
+        }
+    }
+
+    Quit:$ll(tPropInfo)=0 sc    ; no object to parse defined
+
+    Set className = ..packageRequest _ "." _ ..name(serviceDefinition.operationId_"Response")
+    
+    Quit:$$$defClassDefined(className) sc
+    
+    
+    #dim cDef As %Dictionary.ClassDefinition = ##class(%Dictionary.ClassDefinition).%New(className)
+    Set cDef.Super = ..parsedReponseClassName
+    Set cDef.ProcedureBlock = $$$YES
+
+    #dim parsedResponse As %Dictionary.PropertyDefinition
+
+    
+    Set ptr = 0
+
+    While $Listnext(tPropInfo, ptr, propItem) {
+        
+        Set statusCode = $Piece(propItem, ":", 1)
+        Set ref = ..name($Piece(propItem, ":", 2))
+        Set array = $Piece(propItem, ":", 3)
+        Set type = ..packageDefinition _ "." _ ref
+
+        Set parsedResponse = ##class(%Dictionary.PropertyDefinition).%New()
+
+        Set pName = $Select(array:"list",1:"") _ ref
+        Set parsedResponse.Name = pName
+        Set parsedResponse.Type = ..packageDefinition _ "." _ ref
+        
+        Set:array parsedResponse.Collection = "list"
+        Do cDef.Properties.Insert(parsedResponse)
+
+        Do cDef.Parameters.Insert(..createClassParameter(statusCode _ "ISLIST", array))
+        Do cDef.Parameters.Insert(..createClassParameter(statusCode _ "MODEL", parsedResponse.Name))
+        Do cDef.Parameters.Insert(..createClassParameter(statusCode _ "MODELTYPE", parsedResponse.Type))
+
+        Set ..tmp("ensResponse" _ statusCode, serviceDefinition.operationId) = parsedResponse.Type
+
+    }
+    
+    Set ..tmp("ensResponse", serviceDefinition.operationId) = className
+        
+    $$$QuitOnError(cDef.%Save())
+
+    Return sc
+}
+
+/*Method ensResponseClass(serviceDefinition As %Library.DynamicObject) As %Status [ Private ]
 {
     #dim sc As %Status = $$$OK
 
@@ -518,8 +592,9 @@ Method ensResponseClass(serviceDefinition As %Library.DynamicObject) As %Status 
     Set ..tmp("ensResponse200", serviceDefinition.operationId) = parsedResponse.Type
 
     Return sc
-}
-
+}*/
+/// Generate response class for a HTTP Status code 200<br/>
+/// 
 /// Generate Ens.Request classes<br/>
 Method ensRequestClass(serviceDefinition As %Library.DynamicObject, value As %Library.DynamicObject) As %Status [ Private ]
 {

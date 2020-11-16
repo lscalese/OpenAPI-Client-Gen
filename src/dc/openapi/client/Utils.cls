@@ -75,27 +75,38 @@ ClassMethod processParsedResponse(pHttpResponse As %Net.HttpResponse, responseCl
 {
     Return:responseClass="" $$$OK
     Set parsedResponse = "", sc = $$$OK
-    If (pHttpResponse.StatusCode = 200) && (pHttpResponse.ContentType="application/json"){
+    
+    If (pHttpResponse.ContentType="application/json") {
+        Set httpStatusCode = pHttpResponse.StatusCode
+        
         Set parsedResponse = $ClassMethod(responseClass, "%New")
+        
+        Quit:parsedResponse.%GetParameter(httpStatusCode _ "MODEL")="" sc
+
+        #define zIsList httpStatusCode _ "ISLIST"
+        #define zModelType httpStatusCode _ "MODELTYPE"
+        #define zModel httpStatusCode _ "MODEL"
+
         Try {
-            If parsedResponse.%GetParameter("ISLIST") {
+            If parsedResponse.%GetParameter( $$$zIsList ) {
                 Set list = [].%FromJSON(pHttpResponse.Data)
                 Set iter = list.%GetIterator()
                 While iter.%GetNext(.keyParam, .value) {
-                    Set model = $ClassMethod(parsedResponse.%GetParameter("MODELTYPE"), "%New")
+                    Set model = $ClassMethod(parsedResponse.%GetParameter( $$$zModelType ), "%New")
                     Do model.%JSONImport(value)
-                    Do $Method($Property(parsedResponse, parsedResponse.%GetParameter("MODEL")), "Insert", model)
+                    Do $Method($Property(parsedResponse, parsedResponse.%GetParameter( $$$zModel )), "Insert", model)
                 }
             } Else {
-                Set model = $ClassMethod(parsedResponse.%GetParameter("MODELTYPE"), "%New")
+                Set model = $ClassMethod(parsedResponse.%GetParameter( $$$zModelType ), "%New")
                 Do model.%JSONImport(pHttpResponse.Data)
-                Set $Property(parsedResponse, parsedResponse.%GetParameter("MODEL")) = model
+                Set $Property(parsedResponse, parsedResponse.%GetParameter( $$$zModel )) = model
             }
             Set pResponse.parsedResponse = parsedResponse
         } Catch(ex) {
             Set sc = ex.AsStatus()
         }
     }
+
     Return sc
 }
 
