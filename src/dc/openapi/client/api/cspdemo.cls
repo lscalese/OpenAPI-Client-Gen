@@ -17,7 +17,7 @@ ClassMethod OnPage() As %Status
         </head>
         <body onload="">
             <nav class="navbar navbar-dark bg-dark">
-                <span class="navbar-brand mb-0 h1">IRIS Production Generator (1.0.2)</span>
+                <span class="navbar-brand mb-0 h1">IRIS Production Generator (1.1.0)</span>
                 <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
                     <li class="nav-item active">
                     <a class="nav-link" href="https://github.com/lscalese/OpenAPI-Client-Gen">Github</a>
