@@ -177,6 +177,8 @@ The production runs in async mode, so the rest proxy application does not wait f
 Don't wait a body response.  
 This behavior could be edited, but basically, Interoperability production uses async mode.  
 
+**Edit : sync mode is used for proxy rest application since version 1.1.0+**
+
 ### Upload an image
 ```
 curl --location --request POST 'http://localhost:52795/petshoprest/pet/456789/uploadImage' \
