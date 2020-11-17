@@ -190,8 +190,12 @@ Method models() As %Status [ Private ]
 {
     #dim sc As %Status = $$$OK
     #dim class As %Dictionary.ClassDefinition
-    $$$ThrowOnError(##class(Grongier.OpenApi.Definition).Process(..packageModel_".spec"))
-
+    
+    ; $$$ThrowOnError(##class(Grongier.OpenApi.Definition).Process(..packageModel_".spec"))
+    ; issue with the library, code has been copied and fixed
+    ; todo : discuss with Guillaume to fix the library
+    $$$ThrowOnError(##class(dc.openapi.client.Definition).Process(..packageModel_".spec"))
+    
     ; We need %Persistent and %XML.Adaptor for Ensemble architecture.
     ; 
     Set key = ..packageDefinition_"."
@@ -543,59 +547,6 @@ Method ensResponseClass(serviceDefinition As %Library.DynamicObject) As %Status 
     Return sc
 }
 
-/*Method ensResponseClass(serviceDefinition As %Library.DynamicObject) As %Status [ Private ]
-{
-    #dim sc As %Status = $$$OK
-
-    Quit:'$Isobject(serviceDefinition.responses) sc
-    
-    Set r200 = serviceDefinition.responses."200"
-    
-    Quit:'$Isobject(r200) sc    ; no definition for HTTP Status code 200
-    
-    Set array = $$$NO
-    If r200.schema.type="array" {
-
-        Set ref = $Extract(r200.schema.items."$ref", 15, *), array = $$$YES
-
-    } Else {
-
-        Set ref = $Extract(r200.schema."$ref", 15, *)
-
-    }
-    
-    Quit:ref="" sc
-
-    Set ref = ..name(ref)
-
-    Set className = ..packageRequest _ "." _ ..name(serviceDefinition.operationId_"Response")
-    
-    Quit:$$$defClassDefined(className) sc
-    
-    
-    #dim cDef As %Dictionary.ClassDefinition = ##class(%Dictionary.ClassDefinition).%New(className)
-    Set cDef.Super = ..parsedReponseClassName
-    Set cDef.ProcedureBlock = $$$YES
-
-    #dim parsedResponse As %Dictionary.PropertyDefinition = ##class(%Dictionary.PropertyDefinition).%New()
-    
-    Set parsedResponse.Name = ref
-    Set parsedResponse.Type = ..packageDefinition _ "." _ ref
-    
-    Set:array parsedResponse.Collection = "list"
-    Do cDef.Properties.Insert(parsedResponse)
-
-    Do cDef.Parameters.Insert(..createClassParameter("ISLIST", array))
-    Do cDef.Parameters.Insert(..createClassParameter("MODEL", ref))
-    Do cDef.Parameters.Insert(..createClassParameter("MODELTYPE", parsedResponse.Type))
-
-    $$$QuitOnError(cDef.%Save())
-
-    Set ..tmp("ensResponse", serviceDefinition.operationId) = className
-    Set ..tmp("ensResponse200", serviceDefinition.operationId) = parsedResponse.Type
-
-    Return sc
-}*/
 /// Generate response class for a HTTP Status code 200<br/>
 /// 
 /// Generate Ens.Request classes<br/>
@@ -724,6 +675,18 @@ Method ensRequestClass(serviceDefinition As %Library.DynamicObject, value As %Li
         Set keyParam = ""
 
         While iterParam.%GetNext(.keyParam, .parameter) {
+            
+            If parameter."$ref" '= "" {
+            
+                Set ref = $Extract(parameter."$ref", 14, *)
+                Set paramDef = ..spec.parameters.%Get(ref)
+                
+                Return:'$Isobject(paramDef) $$$ERROR($$$GeneralError, $$$FormatText("Parameter error %1", parameter."$ref"))
+
+                Set parameter = paramDef
+                     
+            }
+
             Set property = ##class(%Dictionary.PropertyDefinition).%New()
             Set property.Name = parameter.in _ ..name(parameter.name)
             Set property.Type = ..getObjectScriptType(parameter)
@@ -739,7 +702,7 @@ Method ensRequestClass(serviceDefinition As %Library.DynamicObject, value As %Li
             Do cDef.Properties.Insert(property)
 
             Set requestParamLocation = requestParamLocation _ "," _ property.Name _ ":" _ parameter.in _ ":" _ parameter.name _ ":" _ property.Type_":" _ property.Collection
-
+            
         }
         Set keyParam = ""
     }
