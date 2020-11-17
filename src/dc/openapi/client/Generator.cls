@@ -52,6 +52,10 @@ Property packageDefinition As %String [ Private ];
 
 Property parsedReponseClassName As %String [ Private ];
 
+Property utilsClassname As %String [ Private ];
+
+Property specClassName As %String [ Private ];
+
 Property UrlMap As %Dictionary.XDataDefinition [ InitialExpression = {##class(%Dictionary.XDataDefinition).%New()}, Private ];
 
 Property debug As %Boolean [ InitialExpression = {$Get(%zDebug,0)} ];
@@ -86,6 +90,8 @@ Method %OnNew(spec As %Library.DynamicObject, application As %String, compile As
     Set ..ensProcessSyncClassName = ..packageBusinessProcesses _ ".SyncProcess" 
     Set ..ensProxyServiceClassName = ..packageBusinessServices _ ".ProxyService"
     Set ..restClassName = ..packageRest _ ".REST"
+    Set ..utilsClassname = ..application _ ".Utils"
+    Set ..specClassName = ..packageModel _ ".spec"
 
     Set ..UrlMap = ##class(%Dictionary.XDataDefinition).%New()
     Set ..UrlMap.Name = "UrlMap"
@@ -394,6 +400,8 @@ Method restProxy() As %Status [ Private ]
 
     Set projectionClassName = ..packageRest _ ".Projection"
     
+    Set restAppName = "/"_$zcvt($tr(..application,"."),"l")_"rest"
+
     If '$$$defClassDefined(projectionClassName) {
     
         #dim projectionClass As %Dictionary.ClassDefinition = ##class(%Dictionary.ClassDefinition).%New(projectionClassName)
@@ -412,7 +420,6 @@ Method restProxy() As %Status [ Private ]
         
         Do projectionClass.Methods.Insert(mDef)
 
-        Set restAppName = "/"_$zcvt($tr(..application,"."),"l")_"rest"
 
         Set mDef = ##class(%Dictionary.MethodDefinition).%New()
 
@@ -467,7 +474,26 @@ Method restProxy() As %Status [ Private ]
 
     Do cDef.Projections.Insert(projection)
 
+    ; Add swagger spec
+
+    Set mDef = ##class(%Dictionary.MethodDefinition).%New()
+    Set mDef.Name = "SwaggerSpec"
+    Set mDef.ClassMethod = $$$YES
+    Set mDef.ReturnType = "%Status"
+
+    Set line = $Char(9) _ "Set sc = $$$OK, swagger = ##class(%1).getSwaggerSpec(""%2"", ""OpenAPI"", ""%3"", .sc)"
+    Set line = $$$FormatText(line, ..utilsClassname, ..specClassName, restAppName)
+    Do mDef.Implementation.WriteLine( line )
+
+    Do mDef.Implementation.WriteLine( $Char(9) _ "Quit:$$$ISERR(sc) sc")
+    Do mDef.Implementation.WriteLine( $Char(9) _ "Set %response.ContentType = ""application/json""")
+    Do mDef.Implementation.WriteLine( $Char(9) _ "Write swagger.%ToJSON()")
+    Do mDef.Implementation.WriteLine( $Char(9) _ "Quit sc")
+
+    Do cDef.Methods.Insert(mDef)
     
+    Do ..UrlMap.Data.WriteLine($$$FormatText("<Route Url=""%1"" Method=""%2"" Call=""%3""/>", "/_spec", "GET", "SwaggerSpec" ))
+
     Return cDef.%Save()
 }
 

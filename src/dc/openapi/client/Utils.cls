@@ -138,4 +138,27 @@ ClassMethod fillReponse(genericResponse) As %Status
     Quit $$$OK
 }
 
+ClassMethod getSwaggerSpec(className As %String, xDataName As %String, webapp As %String, Output sc As %Status) As %DynamicObject
+{
+    set sc = $$$OK
+    Set xDataTemplate = ##class(%Dictionary.CompiledXData).%OpenId(className _ "||" _ xDataName ,,.sc)
+    Quit:$$$ISERR(sc) ""
+    
+    Try{
+
+        Set swagger = {}.%FromJSON(xDataTemplate.Data)
+        Set swagger.basePath = webapp
+        Set:$Get(%request)'="" swagger.host = %request.CgiEnvs("SERVER_NAME") _ ":" _ %request.CgiEnvs("SERVER_PORT")
+    
+    } Catch (ex) {
+    
+        Set sc = ex.AsStatus()
+    
+    }
+
+    Quit:$$$ISERR(sc) ""
+
+    Quit swagger
+}
+
 }
