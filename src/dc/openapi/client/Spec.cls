@@ -161,20 +161,23 @@ ClassMethod translateSpec(spec) As %Status
 
             ; issue #15 https://github.com/lscalese/OpenAPI-Client-Gen/issues/15
             If serviceDefinition.operationId = "" {
-                ; operation Identifier
-                Set operationIdentifier = ..translateName(..generateOperationId(method, serviceLocation))
-                
-                If '$Data(usedIdentifier(" "_operationIdentifier)) {
-                    Set usedIdentifier(" "_operationIdentifier) = 1
-                } Else {
-                    Set usedIdentifier(" "_operationIdentifier) = usedIdentifier(" "_operationIdentifier) +1 
-                    Set operationIdentifier = operationIdentifier _ usedIdentifier(" "_operationIdentifier)
-                }
-                
+
+                Set operationIdentifier = ..translateOperationId(..generateOperationId(method, serviceLocation))    
                 Set serviceDefinition.operationId = operationIdentifier
 
             } Else {
-                Set serviceDefinition.operationId = ..translateName(serviceDefinition.operationId)
+                ; clean attempt for operationId contain /, path variable, ...
+                Set serviceDefinition.operationId = $Select($Get(%zCleanSID, 1): ..cleanOperationId(serviceDefinition.operationId), 1: ..translateOperationId(serviceDefinition.operationId))
+                    
+            }
+
+            #define kOpId " " _ serviceDefinition.operationId
+
+            If '$Data(usedIdentifier($$$kOpId)) {
+                Set usedIdentifier($$$kOpId) = 1
+            } Else {
+                Set usedIdentifier($$$kOpId) = usedIdentifier($$$kOpId) +1 
+                Set serviceDefinition.operationId = serviceDefinition.operationId _ usedIdentifier($$$kOpId)
             }
 
             If $ISOBJECT(serviceDefinition.responses) {
@@ -199,7 +202,7 @@ ClassMethod translateSpec(spec) As %Status
     ;definitions
 
     
-    Set newDef = {}
+    Set newDef = {}, defKey = ""
     
     Set iter = spec.definitions.%GetIterator()
 
@@ -207,7 +210,6 @@ ClassMethod translateSpec(spec) As %Status
         
         Set copyDef = {}.%FromJSON(def.%ToJSON())
         Do spec.definitions.%Remove(defKey)
-
         
         If $ISOBJECT(copyDef.properties) {
             Set iterProp = copyDef.properties.%GetIterator()
@@ -232,6 +234,11 @@ ClassMethod translateName(name As %String) As %IO.StringStream
     Return $Translate(name, "_", "")
 }
 
+ClassMethod translateOperationId(name As %String) As %IO.StringStream
+{
+    Return $Translate(name, "_/{}-.", "")
+}
+
 ClassMethod generateOperationId(method As %String, path As %String) As %String
 {
     Set list = $LFS(path, "/"), ptr = 0, id = ""
@@ -241,6 +248,22 @@ ClassMethod generateOperationId(method As %String, path As %String) As %String
     }
     
     Return method_id
+}
+
+ClassMethod cleanOperationId(originalId As %String) As %String
+{
+   
+    Set m=##class(%Regex.Matcher).%New("\{.*?\}", originalId)
+    Set id = m.ReplaceAll("")
+    Set list = $LFS(id , "/"), ptr = 0, id = ""
+    While $ListNext(list, ptr, item) {
+        
+        Set $Extract(item,1) = $Zcvt($Extract(item,1), "U")
+        Set id = id _ item 
+        
+    }
+    
+    Return ..translateOperationId(id)
 }
 
 }
