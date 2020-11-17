@@ -30,6 +30,8 @@ Property ensGenericResponseClassName As %String [ Private ];
 
 Property ensProcessClassName As %String [ Private ];
 
+Property ensProcessSyncClassName As %String [ Private ];
+
 Property ensProxyServiceClassName As %String [ Private ];
 
 Property restClassName As %String [ Private ];
@@ -81,6 +83,7 @@ Method %OnNew(spec As %Library.DynamicObject, application As %String, compile As
     Set ..ensOperationClassName = ..packageBusinessOperations _ ".Operation" 
     Set ..ensGenericResponseClassName = ..packageRequest _ ".GenericResponse" 
     Set ..ensProcessClassName = ..packageBusinessProcesses _ ".Process" 
+    Set ..ensProcessSyncClassName = ..packageBusinessProcesses _ ".SyncProcess" 
     Set ..ensProxyServiceClassName = ..packageBusinessServices _ ".ProxyService"
     Set ..restClassName = ..packageRest _ ".REST"
 
@@ -1074,7 +1077,13 @@ Method restProxyMethod(serviceDefinition As %Library.DynamicObject) As %Status [
     Set mDef.FormalSpec = $Extract(mDef.FormalSpec, 2, *)
     
     
-    Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText("Return ##class(%1).invokeHostAsync(""%2"", ensRequest, ""%3"")", utilsClass, ..ensProcessClassName, ..ensProxyServiceClassName))
+    ;Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText("Return ##class(%1).invokeHostAsync(""%2"", ensRequest, ""%3"")", utilsClass, ..ensProcessClassName, ..ensProxyServiceClassName))
+    ;$$$QuitOnError(##class(petshop.Utils).invokeHostSync("petshop.bp.Process", ensRequest, "petshop.bs.ProxyService", , .pResponse))
+    Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText("$$$QuitOnError(##class(%1).invokeHostSync(""%2"", ensRequest, ""%3"", , .pResponse))", utilsClass, ..ensProcessSyncClassName, ..ensProxyServiceClassName))
+    Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText("Do ##class(%1).fillReponse(pResponse)", utilsClass))
+    Do mDef.Implementation.WriteLine($Char(9)_"Do pResponse.body.OutputToDevice()")
+    Do mDef.Implementation.WriteLine($Char(9)_"Return $$$OK")
+    
 
     Do cDef.Methods.Insert(mDef)
 
@@ -1139,7 +1148,7 @@ Method messageMap() As %Status [ Private ]
     Return cDef.%Save()
 }
 
-/// Generate Generic Business Process class<br/>
+/// Generate Generic Business Process classes<br/>
 Method ensProcessClass() As %Status [ Private ]
 {
     #dim sc As %Status = $$$OK
@@ -1170,7 +1179,36 @@ Method ensProcessClass() As %Status [ Private ]
     Do mDef.Implementation.WriteLine($Char(9) _"Return $$$OK")
     Do cDef.Methods.Insert(mDef)
 
-    Set sc = cDef.%Save()
+    $$$QuitOnError(cDef.%Save())
+    /// Sync process ...
+   
+    If $$$defClassDefined(..ensProcessSyncClassName) {
+        
+        Quit:'..overwriteIfExist sc
+
+        $$$QuitOnError($$Delete^%apiOBJ(..ensProcessSyncClassName,"-d"))
+        
+    }
+
+    Set cDef = ##class(%Dictionary.ClassDefinition).%New(..ensProcessSyncClassName)
+    Set cDef.ProcedureBlock = $$$YES
+    Set cDef.Super = "Ens.BusinessProcess"
+
+    Set mDef = ##class(%Dictionary.MethodDefinition).%New()
+    Set mDef.Name = "OnRequest"
+    Set mDef.FormalSpec = $$$FormatText("pRequest:%1,pResponse:%2", "Ens.Request", "Ens.Response")
+    Set mDef.ReturnType = "%Status"
+    Do mDef.Implementation.WriteLine($Char(9) _$$$FormatText("Return ..SendRequestSync(""%1"", pRequest, .pResponse, ,pRequest.%ClassName(1))", ..ensOperationClassName))
+    Do cDef.Methods.Insert(mDef)
+
+    Set mDef = ##class(%Dictionary.MethodDefinition).%New()
+    Set mDef.Name = "OnResponse"
+    Set mDef.FormalSpec = "request:%Library.Persistent,response:%Library.Persistent,callrequest:%Library.Persistent,callresponse:%Library.Persistent,pCompletionKey:%String"
+    Set mDef.ReturnType = "%Status"
+    Do mDef.Implementation.WriteLine($Char(9) _"Return $$$OK")
+    Do cDef.Methods.Insert(mDef)
+
+    $$$QuitOnError(cDef.%Save())
 
     Return sc
 }
@@ -1236,6 +1274,8 @@ Method ensProduction() As %Status
             Set line = $Replace(line, "{application}", ..application)
             Set line = $Replace(line, "{ensOperationClassName}", ..ensOperationClassName)
             Set line = $Replace(line, "{ensProcessClassName}", ..ensProcessClassName)
+            Set line = $Replace(line, "{ensProcessSyncClassName}", ..ensProcessSyncClassName)
+            
             Set line = $Replace(line, "{server}", ..spec.host)
             Set line = $Replace(line, "{SSLConfig}", "default")
             Do xData.Data.WriteLine(line)
@@ -1297,6 +1337,8 @@ XData ProductionDefinitionTemplate
     <Setting Target="Adapter" Name="SSLConfig">{SSLConfig}</Setting>
   </Item>
   <Item Name="{ensProcessClassName}" Category="" ClassName="{ensProcessClassName}" PoolSize="1" Enabled="true" Foreground="false" Comment="" LogTraceEvents="false" Schedule="">
+  </Item>
+  <Item Name="{ensProcessSyncClassName}" Category="" ClassName="{ensProcessSyncClassName}" PoolSize="1" Enabled="true" Foreground="false" Comment="" LogTraceEvents="false" Schedule="">
   </Item>
 </Production>
 }

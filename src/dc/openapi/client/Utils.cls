@@ -24,6 +24,27 @@ ClassMethod invokeHostAsync(targetHostName As %String, message As %Persistent, s
     quit sc
 }
 
+ClassMethod invokeHostSync(targetHostName As %String, message As %Persistent, serviceName As %String = "EnsLib.Testing.Service", sessionId As %Integer = "", pResponse As Ens.Response) As %Status
+{
+    #dim sc As %Status
+    
+    #dim prod As Ens.Config.Production = ..getCurrentProduction()
+    if '$isObject(prod) quit $$$ERROR($$$GeneralError, "Produciton is not running")
+        
+    #dim item As Ens.Config.Item = ..findConfigItem(targetHostName)
+    if '$isObject(item) quit $$$ERROR($$$GeneralError, "Host " _ targetHostName _ " not found")
+    
+    #dim service As Ens.BusinessService
+    set sc = ##class(Ens.Director).CreateBusinessService(serviceName, .service)
+    if $$$ISERR(sc) quit sc
+    
+    if (sessionId '= "") set service.%SessionId = sessionId
+    
+    set sc = service.SendRequestSync(targetHostName, message, .pResponse)
+
+    quit sc
+}
+
 /// Get current production
 ClassMethod getCurrentProduction() As Ens.Config.Production
 {
@@ -108,6 +129,13 @@ ClassMethod processParsedResponse(pHttpResponse As %Net.HttpResponse, responseCl
     }
 
     Return sc
+}
+
+ClassMethod fillReponse(genericResponse) As %Status
+{
+    #dim %response As %CSP.Response
+    Set %response.ContentType = genericResponse.headers.GetAt("CONTENT-TYPE")
+    Quit $$$OK
 }
 
 }
