@@ -33,24 +33,50 @@ ClassMethod GenerateClass(name As %String, object As %DynamicObject) As %Status
 	#dim classDef as %Dictionary.ClassDefinition
     Do ..CreateClassDef(name,.classDef)
 
+	Set objectProperties = object
 	// Add super class
 	Set parent="%JSON.Adaptor,%RegisteredObject"
-	Set classDef.Super=parent
+	If $Isobject(object.allOf) {
+		;Set iterAllOf = object.allOf.%GetIterator()
+		;While iterAllOf.%GetNext(.allOfKey, .allOfValue) {
+		;	Set parent=parent _ "," _$Replace(object.allOf."$ref","#/definitions/", "")
+		;}
+		Set:$isobject(object.allOf.%Get(0)) parent=parent _ "," _$Replace(object.allOf.%Get(0)."$ref","#/definitions/", "")
+		Set:$isobject(object.allOf.%Get(1)) objectProperties = object.allOf.%Get(1)
+	} 
 	// Fix issue for ProcedureBlock
+	Set classDef.Super = parent
 	Set classDef.ProcedureBlock = 1
 
+	
+	
     // For each property
-    Set iterProperty = object.properties.%GetIterator()
-	Set listRequired = object.required
-	Set:(listRequired="") listRequired = ##class(%DynamicArray).%New()
-    while iterProperty.%GetNext( .key , .value ) {
 
-        Do ..CreateProperty(classDef,key,value,listRequired)   
-		  
-    }
-    zw classDef.%Save()
+	If $isobject( objectProperties.properties ) {
+		Set iterProperty = objectProperties.properties.%GetIterator()
+		Set listRequired = objectProperties.required
+		Set:(listRequired="") listRequired = ##class(%DynamicArray).%New()
+		while iterProperty.%GetNext( .key , .value ) {
+			w !,key, " ", value.%ToJSON()
+			Do ..CreateProperty(classDef,key,value,listRequired)   
+			
+		}
+	}
 
-    Quit $$$OK
+	/*
+	If $isobject( object.properties ) {
+		Set iterProperty = object.properties.%GetIterator()
+		Set listRequired = object.required
+		Set:(listRequired="") listRequired = ##class(%DynamicArray).%New()
+		while iterProperty.%GetNext( .key , .value ) {
+			w !,key, " ", value.%ToJSON()
+			Do ..CreateProperty(classDef,key,value,listRequired)   
+			
+		}
+	}*/
+    Quit classDef.%Save()
+
+    ;Quit $$$OK
 }
 
 /// Create a class definition object

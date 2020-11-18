@@ -601,7 +601,7 @@ Method ensRequestClass(serviceDefinition As %Library.DynamicObject, value As %Li
                     Set property = ##class(%Dictionary.PropertyDefinition).%New()
                     Set pName = parameter.in _ ..name(parameter.name)
                     Set pType = ..getObjectScriptType(parameter)
-                    Set property.Required = parameter.required
+                    Set property.Required = $case(parameter.required,"true":$$$YES,"false":$$$NO,:parameter.required)
                     Set collection = ""
                     
                     If parameter.type = "array" && (parameter.in = "query") && (parameter.collectionFormat = "multi") {
@@ -716,7 +716,7 @@ Method ensRequestClass(serviceDefinition As %Library.DynamicObject, value As %Li
             Set property = ##class(%Dictionary.PropertyDefinition).%New()
             Set property.Name = parameter.in _ ..name(parameter.name)
             Set property.Type = ..getObjectScriptType(parameter)
-            Set property.Required = parameter.required
+            Set property.Required = $case(parameter.required,"true":$$$YES,"false":$$$NO,:parameter.required)
             
             If parameter.type = "array" && (parameter.in = "query") && (parameter.collectionFormat = "multi") {
                 Set property.Collection = "list"
