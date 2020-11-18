@@ -19,7 +19,15 @@ ClassMethod generateApp(appName As %String, spec) As %Status
     Try {
         If $Isobject(spec) {
             If spec.%IsA("%Stream.Object") {
-                Set spec = {}.%FromJSON(.spec)
+
+                If ..isYAML(spec) { 
+                    Set spec = ##class(YAML.Utils).StreamToJSON(spec, .sc)
+                    If $$$ISERR(sc) $$$ThrowStatus(sc)
+                
+                } Else {
+                    Set spec = {}.%FromJSON(spec)
+                }
+
             }
         } Else {
             If $ZCONVERT($Extract(spec, 1, 4), "l") = "http" {
@@ -29,21 +37,24 @@ ClassMethod generateApp(appName As %String, spec) As %Status
             } Else {
                 $$$ThrowStatus($$$ERROR($$$GeneralError, $$$FormatText("Swagger specification not found %1.", spec)))
             }
+
         }
     } Catch(ex) {
         Set sc = ex.AsStatus()
         Set msg = $SYSTEM.Status.GetOneErrorText(sc)
+        b
         If msg [ "Parsing err" {
             Set sc = $$$ERROR($$$GeneralError, "Currently only JSON format is supported.")
         }
     }
-
+    
     Quit:$$$ISERR(sc) sc
 
     If '$Isobject(spec) || (spec.swagger '= "2.0" ) {
         Quit $$$ERROR($$$GeneralError, "Not a Swagger 2.0 file.")
     }
 
+    s ^lsc = spec.%ToJSON()
 
     Return ..%CreateClientApplication(appName, spec)
 }
@@ -52,7 +63,16 @@ ClassMethod loadSpecFromFile(file As %String) As %DynamicObject
 {
     Set stream = ##class(%Stream.FileCharacter).%New()
     Set stream.Filename = file
-    Set spec = {}.%FromJSON(.stream)
+    
+    If ..isYAML(stream) { 
+        
+        Set spec = ##class(YAML.Utils).StreamToJSON(stream, .sc)
+        If $$$ISERR(sc) $$$ThrowStatus(sc)
+
+    } Else {
+        w !, "no yaml"
+        Set spec = {}.%FromJSON(.stream)
+    }
     Return spec
 }
 
@@ -74,7 +94,31 @@ ClassMethod loadSpecFromUrl(url As %String) As %DynamicObject
         $$$ThrowStatus($$$ERROR(5001, "Http status code : " _ request.HttpResponse.StatusCode ))
     }
 
-    Return {}.%FromJSON(request.HttpResponse.Data)
+    Set stream = request.HttpResponse.Data
+
+    If ..isYAML(stream) { 
+
+        Set spec = ##class(YAML.Utils).StreamToJSON(stream, .sc)
+        If $$$ISERR(sc) $$$ThrowStatus(sc)
+    
+    } Else {
+        Set spec = {}.%FromJSON(stream)
+    }
+
+    Return spec
+}
+
+ClassMethod isYAML(stream As %Stream.Object) As %Boolean
+{
+    Do stream.Rewind()
+    Set buffer = $zstrip(stream.Read(),"<W")
+    Do stream.Rewind()
+    Quit ($Extract(buffer) '= "{") && (buffer [ "swagger: ")
+}
+
+ClassMethod convertYAMLToJSON(stream As %Stream.Object, Output sc As %Status) As %Status
+{
+     Do ##class(YAML.Utils).StreamToJSON(stream, .sc)
 }
 
 ClassMethod %CreateClientApplication(applicationName As %String, swagger As %DynamicObject, ByRef features, Output newApplication As %Boolean) As %Status
@@ -115,7 +159,7 @@ ClassMethod %CreateClientApplication(applicationName As %String, swagger As %Dyn
         ; work around for an open problem with the model generation library
         ; https://github.com/grongierisc/objectscript-openapi-definition/issues/4
         Do ..translateSpec(.swagger)
-
+        ;w !,swagger.%ToJSON()
         $$$ThrowOnError(formatter.FormatToString(swagger, .swaggerString))
         $$$ThrowOnError(xData.Data.Write(swaggerString))
         $$$ThrowOnError(cDef.XDatas.Insert(xData))
@@ -185,6 +229,13 @@ ClassMethod translateSpec(spec) As %Status
                 While iterResp.%GetNext(.httpStatusCode , .codeObj ) {
                     Set:codeObj.schema."$ref"'="" codeObj.schema."$ref" = ..translateName(codeObj.schema."$ref")
                     Set:codeObj.schema.items."$ref"'="" codeObj.schema.items."$ref" = ..translateName(codeObj.schema.items."$ref")
+
+                    ; manage embedded object definition
+                    /*If (codeObj.schema."$ref"="") &&  (codeObj.schema.type = "object") {
+                        Set nDefName = $s(codeObj.schema.title="": "Anonymous"_$Increment(cnt), 1: codeObj.schema.title)
+                        Do ..transteResponseDefinition(spec, codeObj, nDefName)
+                    }*/
+                    ;
                 }
             }
 
@@ -207,10 +258,16 @@ ClassMethod translateSpec(spec) As %Status
     Set iter = spec.definitions.%GetIterator()
 
     While iter.%GetNext(.defKey , .def ) {
+        ;w !,defKey," ", $Isobject(spec.definitions.%Get(defKey))
         
+        If '$Isobject(spec.definitions.%Get(defKey)) {
+            Do spec.definitions.%Remove(defKey)
+            Continue
+        }
+
         Set copyDef = {}.%FromJSON(def.%ToJSON())
         Do spec.definitions.%Remove(defKey)
-        
+
         If $ISOBJECT(copyDef.properties) {
             Set iterProp = copyDef.properties.%GetIterator()
 
