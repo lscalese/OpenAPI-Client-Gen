@@ -357,3 +357,5 @@ $ docker-compose build
 ```
 $ docker-compose up -d
 ```
+
+<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/how-to.gif">
