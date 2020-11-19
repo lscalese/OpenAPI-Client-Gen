@@ -159,8 +159,7 @@ ClassMethod %CreateClientApplication(applicationName As %String, swagger As %Dyn
         
         ; work around for an open problem with the model generation library
         ; https://github.com/grongierisc/objectscript-openapi-definition/issues/4
-        ;Do ..translateSpec(.swagger)
-        k ^CacheTemplsc
+        Kill ^CacheTemplsc
         Set ^CacheTemplsc(0) = swagger.%ToJSON()
         Set transformer = ##class(dc.openapi.client.SpecTransform).%New(swagger)
         Set swagger = transformer.transform(.sc)

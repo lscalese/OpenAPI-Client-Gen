@@ -1304,10 +1304,10 @@ Method getObjectScriptType(parameter As %DynamicObject) As %String
 
     Set cosType = $Select(parameter.type="array": $$$CosType(parameter.items), parameter.schema.type="array": $$$CosType(parameter.schema.items),1:$$$CosType(parameter))
     
-    Set:cosType["#/parameters/" cosType = $Replace(cosType, "#/parameters/", "")
+    ;Set:cosType["#/parameters/" cosType = $Replace(cosType, "#/parameters/", "")
     If ($Extract(cosType, 1) '= "%") {
         Set cosType = ..packageDefinition _ "." _ cosType
-        ; w !,"*|costype:",cosType, "|", $$$defClassDefined(cosType)
+        w:'$$$defClassDefined(cosType) !,"*|costype:",cosType, "|", $$$defClassDefined(cosType)
         Set:'$$$defClassDefined(cosType) cosType = "%Stream.GlobalBinary"
     }
     Return cosType

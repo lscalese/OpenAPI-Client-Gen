@@ -1,4 +1,4 @@
 
 select ID, httpStatusCode, operation, operationStatusText, SUBSTRING(body,1)
-from petshop.GenericResponse
+from petshop_msg.GenericResponse
 order by id desc

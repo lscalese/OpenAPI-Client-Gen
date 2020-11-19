@@ -31,7 +31,7 @@ Method transform(Output sc As %Status) As %DynamicObject
             Quit:move=0
 
             if cnt > 100 {
-                ; houlllaaaa something wrong
+                
                 ; prevent infinite loop ...
                 $$$ThrowStatus($$$ERROR($$$GeneralError , "Doh! : I'm so sad '("))
             }
@@ -75,7 +75,7 @@ Method flatDefinition(ByRef move As %Integer) As %Status
                 ;
                 
                 Set name = $Select( prop.title = "": keyP _ "AnonymousItem", 1 : prop.title)
-                Set name = ..getUniqueName(prop.items.title)
+                Set name = ..getUniqueName(prop.items.title, prop.items)
                 ;w !,"-i|",name, " ", $e(prop.items.%ToJSON(),1,80)
                 Do ..spec.definitions.%Set(name , {}.%FromJSON(prop.items.%ToJSON()))
                 Set prop.items = { "$ref" : ("#/definitions/" _ name) }
@@ -85,7 +85,7 @@ Method flatDefinition(ByRef move As %Integer) As %Status
             } ElseIf (prop.type = "object") && (prop."$ref" = "")  && (prop.properties '= "") {
                 
                 Set name = $Select( prop.title = "": keyP _ "Anonymous", 1 : prop.title)
-                Set name = ..getUniqueName( name )
+                Set name = ..getUniqueName( name, prop )
                 ;w !,"-o|",name, " ", $e(prop.%ToJSON(),1,80)
                 Do ..spec.definitions.%Set(name, {}.%FromJSON(prop.%ToJSON()))
                 Do def.properties.%Remove(keyP)
@@ -101,17 +101,44 @@ Method flatDefinition(ByRef move As %Integer) As %Status
     Return sc
 }
 
-Method getUniqueName(name As %String) As %String
+Method getUniqueName(name As %String, compare As %DynamicObject = "") As %String
 {
     Set:name="" name = "AnonymousDef"
     Set uniqueName = name
     
+    ; desperate attempt to reduce the number of generate class if we don't have class identifier such as #/definitions/classname
+
+
+    If $Isobject( compare ) {
+        Set existingObject = ..spec.definitions.%Get( name )
+
+        Set compareString = compare.%ToJSON()
+
+        If $isobject(existingObject) {
+            ;w !,1,"|exists|",(existingObject.%ToJSON()=compareString),"|",name
+            Quit:existingObject.%ToJSON()=compareString name
+        }
+
+        Set key = 1 ; ignore first
+        For i=2:1:+$g(..temp("uniqueDef", " "_name)) {
+            
+            Set existingObject = ..spec.definitions.%Get( name _ i )
+            continue:'$Isobject(existingObject)
+            
+            ;w !,2,"|exists|",(existingObject.%ToJSON()=compareString),"|",name
+            Return:existingObject.%ToJSON()=compareString name _ i
+            
+        }
+
+    }
+
     If $Data(..temp("uniqueDef", " "_name)) {
         
         Set n = $Increment(..temp("uniqueDef", " "_name))
         Set ..temp("uniqueDef", " "_name) = n
 
         Set uniqueName = uniqueName _ n 
+        
     } Else { 
         Set ..temp("uniqueDef", " "_name) = 1
     }
@@ -177,7 +204,7 @@ Method fixNestedObject() As %Status
                     
                     If (codeObj.schema.type = "object") && (codeObj.schema."$ref" = "") {
                         
-                        Set name = ..getUniqueName( codeObj.schema.title )
+                        Set name = ..getUniqueName( codeObj.schema.title, codeObj.schema )
                         ;w !,name, " ",name," ",$e(codeObj.schema.%ToJSON(),1,80)
                         Do ..spec.definitions.%Set(name, {}.%FromJSON(codeObj.schema.%ToJSON()))
                         Set codeObj.schema = { "$ref" : ("#/definitions/" _ name) }
@@ -200,22 +227,12 @@ Method fixNestedObject() As %Status
 
                     If (paramDef.schema.type = "object") && (paramDef.schema."$ref" = "") {
                         
-                        
-                        Set name = ..getUniqueName( paramDef.name )
-                        
-                        ; push to parameters object with a schema reference do #/definitions/...
-                        Set parameterSchemaRef = {}.%FromJSON(paramDef.schema.%ToJSON())
-                        Do parameterSchemaRef.%Remove( "schema" )
-                        Do parameterSchemaRef.%Set( "schema" , { "$ref" : ("#/definitions/" _ name) } )
-                        do ..spec.parameters.%Set( name, parameterSchemaRef )
-
-                        ; push the into definitions
-                        ;w !,"d|",name,"|",$e(paramDef.schema.%ToJSON(),1,80)
+                        Set name = ..getUniqueName( paramDef.name, paramDef.schema )
                         
                         Do ..spec.definitions.%Set(name, {}.%FromJSON(paramDef.schema.%ToJSON()))
 
                         ; set reference to parameters
-                        Set paramDef.schema = { "$ref" : ("#/parameters/" _ name) }
+                        Set paramDef.schema = { "$ref" : ("#/definitions/" _ name) }
 
                     } 
                     

@@ -20,9 +20,9 @@ ClassMethod Process(specClass As %String = "PetStore.spec") As %Status
 	// Iter throw api definitions
     Set iterDefinitions = definitions.%GetIterator()
     while iterDefinitions.%GetNext(.key , .value ) {
-        
-        Do:((value.type = "object")) ..GenerateClass(definitionPackage_"."_key,value)
-
+        ;w !,"key|",key,"|",value.type,"|",definitionPackage_"."_key
+        d:((value.type = "object")) ..GenerateClass(definitionPackage_"."_key,value)
+		;w:((value.type = "object")) "|",$System.Status.GetOneErrorText(a)
     }
     
 	Quit $System.OBJ.CompilePackage(definitionPackage)
@@ -63,20 +63,8 @@ ClassMethod GenerateClass(name As %String, object As %DynamicObject) As %Status
 		}
 	}
 
-	/*
-	If $isobject( object.properties ) {
-		Set iterProperty = object.properties.%GetIterator()
-		Set listRequired = object.required
-		Set:(listRequired="") listRequired = ##class(%DynamicArray).%New()
-		while iterProperty.%GetNext( .key , .value ) {
-			w !,key, " ", value.%ToJSON()
-			Do ..CreateProperty(classDef,key,value,listRequired)   
-			
-		}
-	}*/
+	
     Quit classDef.%Save()
-
-    ;Quit $$$OK
 }
 
 /// Create a class definition object
@@ -188,38 +176,48 @@ ClassMethod CreateProperty(classDef As %Dictionary.ClassDefinition, name As %Str
 /// Get the ObjectScript type for a property.
 ClassMethod GetObjectScriptType(property As %DynamicObject, propDef) As %Status [ Internal ]
 {
-#define SimpleType(%property) $case(%property.type,"string":"%String","number":"%Float","integer":"%Integer","boolean":"%Boolean","":%property."$ref",:"%VarString")
+	#define SimpleType(%property) $case(%property.type,"string":"%String","number":"%Float","integer":"%Integer","boolean":"%Boolean","":%property."$ref",:"%VarString")
+
+	#define GetSimpleCOSType(%type) $case(%type,"string":"%String","number":"%Float","integer":"%Integer","boolean":"%Boolean",:"%VarString")
+	
 	Set type=property.type
 	
 	If type="array" {
 		Set propDef.Collection="list"
 		Set propDef.Type = $Replace($$$SimpleType(property.items),"#/definitions/","")
+		
+		Set tmpType = $$$SimpleType(property.items)
+
+		; check if the target is a object or simple type
+		If tmpType [ "#/definitions/" {
+			Set tmpType = $Replace(tmpType,"#/definitions/",""), targetType = %zdefinitions.%Get(tmpType).type
+			If targetType '= "object" {
+				Set tmpType = $$$GetSimpleCOSType(targetType)
+			}
+		}
+
+		Set propDef.Type = tmpType
 
 	} ElseIf type="file" {
 		Set propDef.Type="%Stream.Object"
 
 	} Else {
-		Set propDef.Type=$Replace($$$SimpleType(property),"#/definitions/","")
-	}
-	
-	;s old = propDef.Type
-	
-	; if a simple type is defined in "definitions" #/definitions/... target a non object type
-	Set refType = $s($isobject(%zdefinitions.%Get(propDef.Type)): %zdefinitions.%Get(propDef.Type).type,1 :"")
-	
-	if (refType '= "") && (refType '= "object" ) {
-		If refType = "array" {
-			Set propDef.Type = $$$SimpleType(%zdefinitions.%Get(propDef.Type).items)
-			Set propDef.Collection="list"
-		} else {
-			Set propDef.Type = $$$SimpleType(%zdefinitions.%Get(propDef.Type))
-		}
-		;w !,"-I| reftype|", refType," |", propDef.Type," |", property.%ToJSON()
-	}  
+		;Set propDef.Type=$Replace($$$SimpleType(property),"#/definitions/","")
 
-	If propDef.Type = "%VarString" {
-		;w !,"-O| reftype|", refType," |", old," |", property.%ToJSON()
+		Set tmpType = $$$SimpleType(property)
+		If tmpType [ "#/definitions/" {
+			; check if the target is a object or simple type
+			Set tmpType = $Replace(tmpType,"#/definitions/",""), targetType = %zdefinitions.%Get(tmpType).type
+			If targetType '= "object" {
+				Set tmpType = $$$GetSimpleCOSType(targetType)
+			}
+		}
+		Set propDef.Type = tmpType
 	}
+	
+	
+	
+	
 	Quit $$$OK
 }
 
