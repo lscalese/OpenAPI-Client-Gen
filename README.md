@@ -145,7 +145,9 @@ Let's push input data.
 
 The generated production include REST api provided for proxy usage.  
 The rest class is petshop.REST for this sample.  
-The web application is automatically configured at compile time (using a Projection).
+The web application is automatically configured at compile time (using a Projection).  
+
+Since version 1.2.0, swagger specification is available for the generated proxy, ex :  `/petshoprest/_spec`  
 
 To generate input data, we use curl command line.  
 
