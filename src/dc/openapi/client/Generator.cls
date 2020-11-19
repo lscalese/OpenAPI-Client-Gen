@@ -67,6 +67,8 @@ Property tmp As %Binary [ MultiDimensional ];
 /// Set to true if you wish this behavior or set %zOverwriteIfExist=1 in your process\terminal.
 Property overwriteIfExist As %Boolean [ InitialExpression = {+$Get(%zOverwriteIfExist,0)} ];
 
+Parameter METHODLIST = "get put post delete options head patch";
+
 Method %OnNew(spec As %Library.DynamicObject, application As %String, compile As %Boolean = {$$$YES}) As %Status
 {
     #dim sc As %Status = $$$OK
@@ -136,7 +138,7 @@ Method generate() As %Status
             Set methodIter = value.%GetIterator()
             While methodIter.%GetNext(.method , .serviceDefinition ) {
                 
-                continue:method="parameters"
+                continue:..#METHODLIST'[method
 
                 Set %zCurrentData("method") = method
 
@@ -600,8 +602,9 @@ Method ensRequestClass(serviceDefinition As %Library.DynamicObject, value As %Li
 
                     Set property = ##class(%Dictionary.PropertyDefinition).%New()
                     Set pName = parameter.in _ ..name(parameter.name)
+                    
                     Set pType = ..getObjectScriptType(parameter)
-                    Set property.Required = $case(parameter.required,"true":$$$YES,"false":$$$NO,:parameter.required)
+                    Set property.Required = $case(parameter.required,"true":$$$YES,"false":$$$NO,:+parameter.required)
                     Set collection = ""
                     
                     If parameter.type = "array" && (parameter.in = "query") && (parameter.collectionFormat = "multi") {
@@ -715,6 +718,7 @@ Method ensRequestClass(serviceDefinition As %Library.DynamicObject, value As %Li
 
             Set property = ##class(%Dictionary.PropertyDefinition).%New()
             Set property.Name = parameter.in _ ..name(parameter.name)
+            ;w !,"p|",$e(parameter.%ToJSON(),1,80)
             Set property.Type = ..getObjectScriptType(parameter)
             Set property.Required = $case(parameter.required,"true":$$$YES,"false":$$$NO,:parameter.required)
             
@@ -1299,9 +1303,11 @@ Method getObjectScriptType(parameter As %DynamicObject) As %String
     #define CosType(%parameter) $case(%parameter.type, "integer":"%Integer","long":"%Integer","float":"%Numeric","double":"%Double","string":"%String","byte":"%Stream.GlobalBinary","file":"%Stream.GlobalBinary","boolean":"%Boolean","date":"%String","dateTime":"%String","password":"%String","":..name($Replace($s(%parameter.schema."$ref"'="":%parameter.schema."$ref",1:%parameter."$ref"),"#/definitions/","")),:"%String")
 
     Set cosType = $Select(parameter.type="array": $$$CosType(parameter.items), parameter.schema.type="array": $$$CosType(parameter.schema.items),1:$$$CosType(parameter))
-
+    
+    Set:cosType["#/parameters/" cosType = $Replace(cosType, "#/parameters/", "")
     If ($Extract(cosType, 1) '= "%") {
         Set cosType = ..packageDefinition _ "." _ cosType
+        ; w !,"*|costype:",cosType, "|", $$$defClassDefined(cosType)
         Set:'$$$defClassDefined(cosType) cosType = "%Stream.GlobalBinary"
     }
     Return cosType

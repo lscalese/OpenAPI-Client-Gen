@@ -42,7 +42,7 @@ ClassMethod generateApp(appName As %String, spec) As %Status
     } Catch(ex) {
         Set sc = ex.AsStatus()
         Set msg = $SYSTEM.Status.GetOneErrorText(sc)
-        b
+        
         If msg [ "Parsing err" {
             Set sc = $$$ERROR($$$GeneralError, "Currently only JSON format is supported.")
         }
@@ -54,7 +54,7 @@ ClassMethod generateApp(appName As %String, spec) As %Status
         Quit $$$ERROR($$$GeneralError, "Not a Swagger 2.0 file.")
     }
 
-    s ^lsc = spec.%ToJSON()
+   
 
     Return ..%CreateClientApplication(appName, spec)
 }
@@ -70,8 +70,9 @@ ClassMethod loadSpecFromFile(file As %String) As %DynamicObject
         If $$$ISERR(sc) $$$ThrowStatus(sc)
 
     } Else {
-        w !, "no yaml"
+        
         Set spec = {}.%FromJSON(.stream)
+
     }
     Return spec
 }
@@ -158,8 +159,18 @@ ClassMethod %CreateClientApplication(applicationName As %String, swagger As %Dyn
         
         ; work around for an open problem with the model generation library
         ; https://github.com/grongierisc/objectscript-openapi-definition/issues/4
-        Do ..translateSpec(.swagger)
-        ;w !,swagger.%ToJSON()
+        ;Do ..translateSpec(.swagger)
+        k ^CacheTemplsc
+        Set ^CacheTemplsc(0) = swagger.%ToJSON()
+        Set transformer = ##class(dc.openapi.client.SpecTransform).%New(swagger)
+        Set swagger = transformer.transform(.sc)
+        
+        If $$$ISERR(sc) $$$ThrowStatus(sc)
+
+        ; keep the last transformed swagger (debug purpose)
+        Set ^CacheTemplsc(1) = swagger.%ToJSON()
+        Kill transformer
+
         $$$ThrowOnError(formatter.FormatToString(swagger, .swaggerString))
         $$$ThrowOnError(xData.Data.Write(swaggerString))
         $$$ThrowOnError(cDef.XDatas.Insert(xData))
@@ -188,139 +199,6 @@ ClassMethod %RemoveXDataBlock(cDef, blockName)
  	If (key'="") {
  		Set oid = cDef.XDatas.RemoveAt(key)
 	}
-}
-
-ClassMethod translateSpec(spec) As %Status
-{
-    #dim iter As %Iterator.AbstractIterator = spec.paths.%GetIterator()
-    #dim serviceLocation As %String
-    #dim serviceDefinition As %Library.DynamicObject
-    #dim method As %String
-
-    
-    While iter.%GetNext(.serviceLocation , .value ) {
-        Set methodIter = value.%GetIterator()
-
-        While methodIter.%GetNext(.method , .serviceDefinition ) {
-
-            ; issue #15 https://github.com/lscalese/OpenAPI-Client-Gen/issues/15
-            If serviceDefinition.operationId = "" {
-
-                Set operationIdentifier = ..translateOperationId(..generateOperationId(method, serviceLocation))    
-                Set serviceDefinition.operationId = operationIdentifier
-
-            } Else {
-                ; clean attempt for operationId contain /, path variable, ...
-                Set serviceDefinition.operationId = $Select($Get(%zCleanSID, 1): ..cleanOperationId(serviceDefinition.operationId), 1: ..translateOperationId(serviceDefinition.operationId))
-                    
-            }
-
-            #define kOpId " " _ serviceDefinition.operationId
-
-            If '$Data(usedIdentifier($$$kOpId)) {
-                Set usedIdentifier($$$kOpId) = 1
-            } Else {
-                Set usedIdentifier($$$kOpId) = usedIdentifier($$$kOpId) +1 
-                Set serviceDefinition.operationId = serviceDefinition.operationId _ usedIdentifier($$$kOpId)
-            }
-
-            If $ISOBJECT(serviceDefinition.responses) {
-                Set iterResp = serviceDefinition.responses.%GetIterator()
-                While iterResp.%GetNext(.httpStatusCode , .codeObj ) {
-                    Set:codeObj.schema."$ref"'="" codeObj.schema."$ref" = ..translateName(codeObj.schema."$ref")
-                    Set:codeObj.schema.items."$ref"'="" codeObj.schema.items."$ref" = ..translateName(codeObj.schema.items."$ref")
-
-                    ; manage embedded object definition
-                    /*If (codeObj.schema."$ref"="") &&  (codeObj.schema.type = "object") {
-                        Set nDefName = $s(codeObj.schema.title="": "Anonymous"_$Increment(cnt), 1: codeObj.schema.title)
-                        Do ..transteResponseDefinition(spec, codeObj, nDefName)
-                    }*/
-                    ;
-                }
-            }
-
-            If $ISOBJECT(serviceDefinition.parameters) {
-                Set iterParams = serviceDefinition.parameters.%GetIterator()
-                While iterParams.%GetNext(.paramsKey , .param ) {
-                    Set:param.schema."$ref"'="" param.schema."$ref" = ..translateName(param.schema."$ref")
-                    Set:param.schema.items."$ref"'="" param.schema.items."$ref" = ..translateName(param.schema.items."$ref")
-                }
-            }
-            
-        }
-    }
-
-    ;definitions
-
-    
-    Set newDef = {}, defKey = ""
-    
-    Set iter = spec.definitions.%GetIterator()
-
-    While iter.%GetNext(.defKey , .def ) {
-        ;w !,defKey," ", $Isobject(spec.definitions.%Get(defKey))
-        
-        If '$Isobject(spec.definitions.%Get(defKey)) {
-            Do spec.definitions.%Remove(defKey)
-            Continue
-        }
-
-        Set copyDef = {}.%FromJSON(def.%ToJSON())
-        Do spec.definitions.%Remove(defKey)
-
-        If $ISOBJECT(copyDef.properties) {
-            Set iterProp = copyDef.properties.%GetIterator()
-
-            While iterProp.%GetNext(.propKey , .propDef ) {
-                Set:propDef."$ref"'="" propDef."$ref" = ..translateName(propDef."$ref")
-                Set:propDef.items."$ref"'="" propDef.items."$ref" = ..translateName(propDef.items."$ref")
-            }
-        }
-
-        Set newDefKey = ..translateName(defKey)
-        Do newDef.%Set(..translateName(defKey), copyDef)
-    }
-
-    Set spec.definitions = newDef
-
-    Return $$$OK
-}
-
-ClassMethod translateName(name As %String) As %IO.StringStream
-{
-    Return $Translate(name, "_", "")
-}
-
-ClassMethod translateOperationId(name As %String) As %IO.StringStream
-{
-    Return $Translate(name, "_/{}-.", "")
-}
-
-ClassMethod generateOperationId(method As %String, path As %String) As %String
-{
-    Set list = $LFS(path, "/"), ptr = 0, id = ""
-    
-    While $ListNext(list, ptr, item) {
-        Set:$Extract(item, 1)'="{" id = id _ item  ; exclude path parameter
-    }
-    
-    Return method_id
-}
-
-ClassMethod cleanOperationId(originalId As %String) As %String
-{
-   
-    Set m=##class(%Regex.Matcher).%New("\{.*?\}", originalId)
-    Set id = m.ReplaceAll("")
-    Set list = $LFS(id , "/"), ptr = 0, id = ""
-    While $ListNext(list, ptr, item) {
-        
-        Set $Extract(item,1) = $Zcvt($Extract(item,1), "U")
-        Set id = id _ item 
-        
-    }
-    
-    Return ..translateOperationId(id)
 }
 
 }

@@ -57,7 +57,7 @@ ClassMethod GenerateClass(name As %String, object As %DynamicObject) As %Status
 		Set listRequired = objectProperties.required
 		Set:(listRequired="") listRequired = ##class(%DynamicArray).%New()
 		while iterProperty.%GetNext( .key , .value ) {
-			w !,key, " ", value.%ToJSON()
+			
 			Do ..CreateProperty(classDef,key,value,listRequired)   
 			
 		}
@@ -188,7 +188,7 @@ ClassMethod CreateProperty(classDef As %Dictionary.ClassDefinition, name As %Str
 /// Get the ObjectScript type for a property.
 ClassMethod GetObjectScriptType(property As %DynamicObject, propDef) As %Status [ Internal ]
 {
-#define SimpleType(%property) $case(%property.type,"string":"%VarString","number":"%Float","integer":"%Integer","boolean":"%Boolean","":%property."$ref",:"%VarString")
+#define SimpleType(%property) $case(%property.type,"string":"%String","number":"%Float","integer":"%Integer","boolean":"%Boolean","":%property."$ref",:"%VarString")
 	Set type=property.type
 	
 	If type="array" {
@@ -202,13 +202,24 @@ ClassMethod GetObjectScriptType(property As %DynamicObject, propDef) As %Status 
 		Set propDef.Type=$Replace($$$SimpleType(property),"#/definitions/","")
 	}
 	
+	;s old = propDef.Type
+	
+	; if a simple type is defined in "definitions" #/definitions/... target a non object type
 	Set refType = $s($isobject(%zdefinitions.%Get(propDef.Type)): %zdefinitions.%Get(propDef.Type).type,1 :"")
 	
 	if (refType '= "") && (refType '= "object" ) {
-		
-		Set propDef.Type = $$$SimpleType(%zdefinitions.%Get(propDef.Type))
-	}
+		If refType = "array" {
+			Set propDef.Type = $$$SimpleType(%zdefinitions.%Get(propDef.Type).items)
+			Set propDef.Collection="list"
+		} else {
+			Set propDef.Type = $$$SimpleType(%zdefinitions.%Get(propDef.Type))
+		}
+		;w !,"-I| reftype|", refType," |", propDef.Type," |", property.%ToJSON()
+	}  
 
+	If propDef.Type = "%VarString" {
+		;w !,"-O| reftype|", refType," |", old," |", property.%ToJSON()
+	}
 	Quit $$$OK
 }
 
