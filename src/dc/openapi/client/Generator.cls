@@ -356,7 +356,7 @@ Method ensOperationClass() As %Status [ Private ]
     Do mDef.Implementation.WriteLine($Char(9,9,9) _"Do pResponse.headers.SetAt(headerValue, key)")
     Do mDef.Implementation.WriteLine($Char(9,9) _"}")
     
-    Do mDef.Implementation.WriteLine($Char(9,9) _"Set sc = ##class(petshop.Utils).processParsedResponse(pHttpResponse, parsedResponseClassName, caller, pRequest, pResponse)")
+    Do mDef.Implementation.WriteLine($Char(9,9) _"Set sc = ##class("_ ..utilsClassname _").processParsedResponse(pHttpResponse, parsedResponseClassName, caller, pRequest, pResponse)")
 
     Do mDef.Implementation.WriteLine($Char(9) _"}")
     Do mDef.Implementation.WriteLine($Char(9) _"Return sc")
