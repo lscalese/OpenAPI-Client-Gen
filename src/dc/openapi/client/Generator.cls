@@ -1268,8 +1268,8 @@ Method ensProduction() As %Status
             Set line = $Replace(line, "{ensOperationClassName}", ..ensOperationClassName)
             Set line = $Replace(line, "{ensProcessClassName}", ..ensProcessClassName)
             Set line = $Replace(line, "{ensProcessSyncClassName}", ..ensProcessSyncClassName)
-            
-            Set line = $Replace(line, "{server}", ..spec.host)
+            Set line = $Replace(line, "{server}", $Piece(..spec.host, ":", 1))
+            Set line = $Replace(line, "{port}", $Piece(..spec.host, ":", 2))
             Set line = $Replace(line, "{SSLConfig}", "default")
             Do xData.Data.WriteLine(line)
         }
@@ -1330,6 +1330,7 @@ XData ProductionDefinitionTemplate
   <Item Name="{ensOperationClassName}" Category="" ClassName="{ensOperationClassName}" PoolSize="1" Enabled="true" Foreground="false" Comment="" LogTraceEvents="false" Schedule="">
     <Setting Target="Adapter" Name="HTTPServer">{server}</Setting>
     <Setting Target="Adapter" Name="SSLConfig">{SSLConfig}</Setting>
+    <Setting Target="Adapter" Name="HTTPPort">{port}</Setting>
   </Item>
   <Item Name="{ensProcessClassName}" Category="" ClassName="{ensProcessClassName}" PoolSize="1" Enabled="true" Foreground="false" Comment="" LogTraceEvents="false" Schedule="">
   </Item>

@@ -134,7 +134,12 @@ ClassMethod processParsedResponse(pHttpResponse As %Net.HttpResponse, responseCl
 ClassMethod fillReponse(genericResponse) As %Status
 {
     #dim %response As %CSP.Response
-    Set %response.ContentType = genericResponse.headers.GetAt("CONTENT-TYPE")
+    Set %response.ContentType = genericResponse.headers.GetAt( "CONTENT-TYPE" )
+
+    For header = "CONTENT-DISPOSITION" {
+        Do:genericResponse.headers.GetAt( header )'="" %response.SetHeader( header, genericResponse.headers.GetAt( header ) )
+    }
+
     Quit $$$OK
 }
 
