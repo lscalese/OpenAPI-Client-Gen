@@ -15,6 +15,10 @@
           <Name>objectscript-openapi-definition</Name>
           <Version>1.1.3</Version>
         </ModuleReference>
+        <ModuleReference>
+          <Name>yaml-utils</Name>
+          <Version>0.1.1</Version>
+        </ModuleReference>
       </Dependencies>
       <SourcesRoot>src</SourcesRoot>
       <Resource Name="dc.openapi.client.PKG"/>

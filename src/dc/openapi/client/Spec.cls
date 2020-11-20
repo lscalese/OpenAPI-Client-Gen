@@ -21,7 +21,8 @@ ClassMethod generateApp(appName As %String, spec) As %Status
             If spec.%IsA("%Stream.Object") {
 
                 If ..isYAML(spec) { 
-                    Set spec = ##class(YAML.Utils).StreamToJSON(spec, .sc)
+
+                    Set spec = ..convertYAMLToJSON( spec, .sc)
                     If $$$ISERR(sc) $$$ThrowStatus(sc)
                 
                 } Else {
@@ -66,7 +67,7 @@ ClassMethod loadSpecFromFile(file As %String) As %DynamicObject
     
     If ..isYAML(stream) { 
         
-        Set spec = ##class(YAML.Utils).StreamToJSON(stream, .sc)
+        Set spec = ..convertYAMLToJSON( stream, .sc)
         If $$$ISERR(sc) $$$ThrowStatus(sc)
 
     } Else {
@@ -99,7 +100,7 @@ ClassMethod loadSpecFromUrl(url As %String) As %DynamicObject
 
     If ..isYAML(stream) { 
 
-        Set spec = ##class(YAML.Utils).StreamToJSON(stream, .sc)
+        Set spec = ..convertYAMLToJSON( stream, .sc)
         If $$$ISERR(sc) $$$ThrowStatus(sc)
     
     } Else {
@@ -117,9 +118,12 @@ ClassMethod isYAML(stream As %Stream.Object) As %Boolean
     Quit ($Extract(buffer) '= "{") && (buffer [ "swagger: ")
 }
 
-ClassMethod convertYAMLToJSON(stream As %Stream.Object, Output sc As %Status) As %Status
+ClassMethod convertYAMLToJSON(stream As %Stream.Object, Output sc As %Status) As %DynamicObject
 {
-     Do ##class(YAML.Utils).StreamToJSON(stream, .sc)
+    set lt = stream.Read()
+	set:lt[$c(13,10) stream.LineTerminator = $c(13,10)
+	do stream.Rewind()
+    Quit ##class(YAML.Utils).StreamToJSON(stream, .sc)
 }
 
 ClassMethod %CreateClientApplication(applicationName As %String, swagger As %DynamicObject, ByRef features, Output newApplication As %Boolean) As %Status

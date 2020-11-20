@@ -19,6 +19,8 @@ Method transform(Output sc As %Status) As %DynamicObject
 
     Try {
 
+        Set:'$isobject(..spec.definitions) ..spec.definitions = {} ; create an empty "definitions" if does not exists to avoid <invalid oref>
+        
         $$$ThrowOnError(..initUniqueName())
         
         $$$ThrowOnError(..fixNestedObject()) ; move object definition from response and parameters to "definitions" or root "parameters".
@@ -26,7 +28,7 @@ Method transform(Output sc As %Status) As %DynamicObject
         For  {
             
             $$$ThrowOnError(..flatDefinition(.move))    ; Keep only one level, move nested object to "definition" and add $ref for linked.
-            ;w !, "flatDefinition move : ", move 
+            
             Set cnt = $Increment(cnt) 
             Quit:move=0
 
@@ -106,8 +108,8 @@ Method getUniqueName(name As %String, compare As %DynamicObject = "") As %String
     Set:name="" name = "AnonymousDef"
     Set uniqueName = name
     
+    
     ; desperate attempt to reduce the number of generate class if we don't have class identifier such as #/definitions/classname
-
 
     If $Isobject( compare ) {
         Set existingObject = ..spec.definitions.%Get( name )
@@ -175,7 +177,7 @@ Method fixNestedObject() As %Status
        Set methodIter = value.%GetIterator()
 
         While methodIter.%GetNext(.method , .serviceDefinition ) {
-            
+        
            continue:..#METHODLIST'[method
 
 
@@ -210,6 +212,14 @@ Method fixNestedObject() As %Status
                         Set codeObj.schema = { "$ref" : ("#/definitions/" _ name) }
 
                     } 
+
+                    ; Fix an issue when a yaml has been convert to json
+                    ; ex key 200 quoted --> { "\"200\"": { ... }}
+
+                    If httpStatusCode [ """" {
+                        Do serviceDefinition.responses.%Set( $Translate(httpStatusCode, """"), codeObj )
+                        Do serviceDefinition.responses.%Remove( httpStatusCode )
+                    }
                     
                 }
             }
