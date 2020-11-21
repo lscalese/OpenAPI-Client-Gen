@@ -7,7 +7,7 @@ Method GetBaseTestDir(Output separator As %String) As %String
 {
     Set separator = $s($$$isWINDOWS:"\",1:"/")
     // currentdir will be repo_root/test/cls/YAML/Test/
-    Quit $piece(..Manager.CurrentDir, separator, 1, *-5)_separator
+    Quit $piece(..Manager.CurrentDir, separator, 1, *-6)_separator
 }
 
 Method TestLoadFromFile() As %Status
