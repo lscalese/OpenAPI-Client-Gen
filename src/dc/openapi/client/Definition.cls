@@ -203,7 +203,6 @@ ClassMethod GetObjectScriptType(property As %DynamicObject, propDef) As %Status 
 
 	} Else {
 		;Set propDef.Type=$Replace($$$SimpleType(property),"#/definitions/","")
-
 		Set tmpType = $$$SimpleType(property)
 		If tmpType [ "#/definitions/" {
 			; check if the target is a object or simple type

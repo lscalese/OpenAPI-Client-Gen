@@ -3,8 +3,8 @@
   <Document name="openapi-client-gen.ZPM">
     <Module>
       <Name>openapi-client-gen</Name>
-      <Description>Class generator based on open api specification (Business Operation, Business Service, EnsRequest)</Description>
-      <Version>1.3.2</Version>
+      <Description>IRIS Interoperability Production generator from Swagger 2.0 specification.</Description>
+      <Version>1.3.3</Version>
       <Packaging>module</Packaging>
       <Dependencies>
         <ModuleReference>
@@ -43,6 +43,8 @@
             AuthenticationMethods="64" 
             MatchRoles=":%DB_${Namespace}"
             Recurse="1"/>
+      
+      <UnitTest Name="/test/cls" Package="test.dc.openapi.client" Phase="test" />
 
       <SystemRequirements Version=">=2020.1" Interoperability="enabled" />
     </Module>

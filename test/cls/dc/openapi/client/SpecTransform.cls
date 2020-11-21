@@ -1,7 +1,7 @@
 Class test.dc.openapi.client.SpecTransform Extends %UnitTest.TestCase
 {
 
-Parameter INPUTFILES = "petshop.json,nlp.json,nlp.yaml";
+Parameter INPUTFILES = "petshop.json,nlp.json,nlp.yaml,swagger-test.json";
 
 Method GetBaseTestDir(Output separator As %String) As %String
 {
@@ -43,7 +43,14 @@ Method TestTransform() As %Status
     #dim sc As %Status = $$$OK
 
     #dim baseDir As %String = ..GetBaseTestDir(.separator) _ "files" _ separator
+    #dim outDir As %String = baseDir _ "out/transform/"
 
+    
+    Do:##class(%File).DirectoryExists( outDir ) ##class(%File).RemoveDirectoryTree( outDir )
+    
+    Set writeAccess = ##class(%File).CreateDirectoryChain( outDir )
+    
+    
     Try {
 
         For  {
@@ -55,11 +62,23 @@ Method TestTransform() As %Status
             Set spec = ##class(dc.openapi.client.Spec).loadSpecFromFile( filePath )
 
             Set specTransformer = ##class(dc.openapi.client.SpecTransform).%New( spec )
-            Do specTransformer.transform( .sc )
+            Set simplifiedSpec = specTransformer.transform( .sc )
 
-            Do $$$AssertStatusOK( sc, filePath)
+            Do $$$AssertTrue( $Isobject(simplifiedSpec), "transform return an object." )
 
-            If $$$ISERR(sc) $$$ThrowStatus(sc)
+            Do $$$AssertStatusOK( sc, "transform " _filePath)
+
+            If $Isobject(simplifiedSpec) && writeAccess {   ; dump json only if we can write.
+                
+                Set stream=##class(%FileCharacterStream).%New()
+                Set stream.TranslateTable="UTF8"
+                Set stream.Filename = outDir _ $Piece(inputFile , ".", *-1) _ ".json"
+                Set formatter=##class(%JSON.Formatter).%New()
+                $$$ThrowOnError(formatter.FormatToStream(simplifiedSpec, .stream))
+                $$$ThrowOnError(stream.SaveStream())
+                Kill stream
+
+            }
         }
 
     } Catch (ex) {

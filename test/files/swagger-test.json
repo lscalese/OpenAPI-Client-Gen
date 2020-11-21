@@ -1,0 +1,139 @@
+{
+    "swagger" : "2.0",
+    "info": {
+        "title":"Test file for OpenAPI-Client-Gen",
+        "version":"1.0"
+    },
+
+    "paths": {
+        "/firstservice": {
+            "post": {
+                "description": "first test service",
+                "parameters": [ 
+                    {
+                        "$ref":"#/parameters/firstService"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/firstservice/{id}": {
+            "get": {
+                "description": "first test service",
+                "parameters": [
+                    {
+                        "name" : "id",
+                        "type" : "integer",
+                        "in" : "path",
+                        "required" : true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref":"#/definitions/object1"
+                        }
+                    }
+                },
+                "operationId": "FirstServiceId"
+            },
+            "parameters" : [ 
+                {
+                    "$ref": "#/parameters/headerTest"
+                } 
+            ]
+        },
+        "/nestedobject": {
+            "post": {
+                "description": "nested object definition",
+                "parameters": [{
+                    "name" : "nestedobject",
+                    "in" : "body",
+                    "schema": {
+                        "type" : "object",
+                        "properties" : {
+                            "simpleString" : {
+                                "type" : "string"
+                            },
+                            "listInteger": {
+                                "type" : "array",
+                                "items": {
+                                    "type" : "integer"
+                                }
+                            },
+                            "listObject1" : {
+                                "type" : "array",
+                                "items": {
+                                    "$ref": "#/definitions/object1"
+                                }
+                            },
+                            "simpleObject1" : {
+                                "$ref" : "#/definitions/object1"
+                            },
+                            "nestedSchema" : {
+                                "type" : "object",
+                                "properties": {
+                                    "SchemaObject1" : {
+                                        "$ref" : "#/definitions/object1"
+                                    },
+                                    "ListSchemaObject1" : {
+                                        "type" : "array",
+                                        "items" : {    
+                                            "$ref": "#/definitions/object1"
+                                        }
+                                    },
+                                    "ListSimpleString" : {
+                                        "type" : "array",
+                                        "items": {
+                                            "$ref": "#/definitions/simpleTypeString"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                }],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        }
+    },
+    "parameters": {
+        "firstService": {
+            "name": "name",
+            "in": "body",
+            "description": "",
+            "schema": {
+                "$ref" : "#/definitions/object1"
+            }
+        },
+        "headerTest": {
+            "name" : "headerTest",
+            "in" : "header",
+            "required" : true,
+            "type" : "string"
+        } 
+    },
+    "definitions": {
+        "object1": {
+            "type":"object",
+            "properties": {
+                "property": {
+                    "type": "integer"
+                }
+            }
+        },
+        "simpleTypeString" : {
+            "type" : "string"
+        }
+    }
+}
