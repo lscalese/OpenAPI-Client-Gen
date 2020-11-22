@@ -41,6 +41,15 @@
             "schema":{
               "$ref":"#/definitions/object1"
             }
+          },
+          "204":{
+            "description":"OK",
+            "schema":{
+              "type":"array",
+              "items":{
+                "$ref":"#/definitions/object1"
+              }
+            }
           }
         },
         "operationId":"FirstServiceId"
@@ -70,6 +79,82 @@
         },
         "operationId":"postnestedobject"
       }
+    },
+    "/withallof":{
+      "get":{
+        "description":"allOf usage case",
+        "parameters":[
+          {
+            "$ref":"#/parameters/allOfParameters"
+          }
+        ],
+        "responses":{
+          "200":{
+            "description":"OK",
+            "schema":{
+              "$ref":"#/definitions/testSimpleAllOf"
+            }
+          },
+          "201":{
+            "description":"test schema with allOf",
+            "schema":{
+              "$ref":"#/definitions/nested201AllOf"
+            }
+          },
+          "204":{
+            "description":"test schema with array of allOf",
+            "schema":{
+              "title":"nested204ArrayAllOf",
+              "type":"array",
+              "items":{
+                "$ref":"#/definitions/nested204ArrayAllOf"
+              }
+            }
+          }
+        },
+        "operationId":"GetWithAllOf"
+      },
+      "post":{
+        "description":"allOf usage case",
+        "operationId":"PostWithAllOf",
+        "parameters":[
+          {
+            "name":"NestedallOfParameters",
+            "in":"body",
+            "required":true,
+            "schema":{
+              "$ref":"#/definitions/NestedallOfParameters"
+            }
+          }
+        ],
+        "responses":{
+          "200":{
+            "description":"OK"
+          }
+        }
+      },
+      "put":{
+        "description":"allOf usage case",
+        "operationId":"PutWithAllOf",
+        "parameters":[
+          {
+            "name":"ListNestedallOfParameters",
+            "in":"body",
+            "required":true,
+            "schema":{
+              "type":"array",
+              "items":{
+                "$ref":"#/definitions/ListNestedallOfParameters"
+              }
+            }
+          }
+        ],
+        "responses":{
+          "200":{
+            "description":"OK"
+          }
+        }
+      }
     }
   },
   "parameters":{
@@ -86,6 +171,14 @@
       "in":"header",
       "required":true,
       "type":"string"
+    },
+    "allOfParameters":{
+      "name":"allOfParameters",
+      "in":"body",
+      "required":true,
+      "schema":{
+        "$ref":"#/definitions/allOfParameters"
+      }
     }
   },
   "definitions":{
@@ -99,6 +192,26 @@
     },
     "simpleTypeString":{
       "type":"string"
+    },
+    "testSimpleAllOf":{
+      "description":"testAllOf",
+      "type":"object",
+      "allOf":[
+        {
+          "$ref":"#/definitions/object1"
+        },
+        {
+          "type":"object",
+          "properties":{
+            "additionalInfo1":{
+              "type":"string"
+            },
+            "additionalInfo2":{
+              "type":"string"
+            }
+          }
+        }
+      ]
     },
     "nestedobject":{
       "type":"object",
@@ -125,6 +238,82 @@
           "$ref":"#/definitions/nestedSchemaAnonymous"
         }
       }
+    },
+    "nested201AllOf":{
+      "title":"nested201AllOf",
+      "allOf":[
+        {
+          "$ref":"#/definitions/object1"
+        },
+        {
+          "type":"object",
+          "properties":{
+            "allOf201AddInfo":{
+              "type":"string"
+            }
+          }
+        }
+      ]
+    },
+    "nested204ArrayAllOf":{
+      "allOf":[
+        {
+          "$ref":"#/definitions/object1"
+        },
+        {
+          "type":"object",
+          "properties":{
+            "additionalArrayAllOf":{
+              "type":"string"
+            }
+          }
+        }
+      ]
+    },
+    "NestedallOfParameters":{
+      "allOf":[
+        {
+          "$ref":"#/definitions/object1"
+        },
+        {
+          "type":"object",
+          "properties":{
+            "aFieldInAllOf2":{
+              "type":"string"
+            }
+          }
+        }
+      ]
+    },
+    "ListNestedallOfParameters":{
+      "allOf":[
+        {
+          "$ref":"#/definitions/object1"
+        },
+        {
+          "type":"object",
+          "properties":{
+            "aFieldInAllOf3":{
+              "type":"string"
+            }
+          }
+        }
+      ]
+    },
+    "allOfParameters":{
+      "allOf":[
+        {
+          "$ref":"#/definitions/object1"
+        },
+        {
+          "type":"object",
+          "properties":{
+            "aFieldInAllOf":{
+              "type":"string"
+            }
+          }
+        }
+      ]
     },
     "nestedSchemaAnonymous":{
       "type":"object",

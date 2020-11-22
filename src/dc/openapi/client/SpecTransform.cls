@@ -281,15 +281,18 @@ Method fixNestedObject() As %Status
     Return sc
  
 mvToDef(key, obj)
-    Set name = $Select( obj.schema.title'="" : obj.schema.title, obj.name'="": obj.name, 1: key )
+    Quit:'$Isobject(obj.schema)
+    Set name = $Select( obj.schema.title'="" : obj.schema.title, obj.name'="": obj.name, $Isvalidnum(key): "R" _ key, 1: key )
     Set name = ..getUniqueName( name , obj.schema )
     Do ..spec.definitions.%Set(name, {}.%FromJSON(obj.schema.%ToJSON()))
     Set obj.schema = { "$ref" : ("#/definitions/" _ name) }
     Quit
 
 mvArray(key, obj)
+    Quit:'$Isobject(obj.schema)
     ;Set name = ..getUniqueName( obj.schema.title, obj.schema.items )
-    Set name = $Select( obj.schema.title'="" : obj.schema.title, obj.name'="": obj.name, 1: key )
+    ;Set name = $Select( obj.schema.title'="" : obj.schema.title, obj.name'="": obj.name, 1: key )
+    Set name = $Select( obj.schema.title'="" : obj.schema.title, obj.name'="": obj.name, $Isvalidnum(key): "R" _ key, 1: key )
     Set name = ..getUniqueName( name, obj.schema.items )
     Do ..spec.definitions.%Set(name, {}.%FromJSON(obj.schema.items.%ToJSON()))
     Set obj.schema.items = { "$ref" : ("#/definitions/" _ name) }

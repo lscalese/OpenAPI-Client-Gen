@@ -275,7 +275,7 @@
         "metadata":{
           "type":"array",
           "items":{
-            "$ref":"#/definitions/AnonymousDef12"
+            "$ref":"#/definitions/AnonymousDef"
           }
         }
       }
@@ -1485,6 +1485,37 @@
         }
       }
     },
+    "R200":{
+      "allOf":[
+        {
+          "$ref":"#/definitions/SourceList"
+        },
+        {
+          "type":"object",
+          "properties":{
+            "score":{
+              "type":"number",
+              "description":"score expressing the similarity between this record and the seed document"
+            },
+            "percentageMatched":{
+              "type":"number"
+            },
+            "percentageNew":{
+              "type":"number"
+            },
+            "numberOfEntitiesInRefSource":{
+              "type":"integer"
+            },
+            "numberOfEntitiesInCommon":{
+              "type":"integer"
+            },
+            "numberOfEntitiesInThisSource":{
+              "type":"integer"
+            }
+          }
+        }
+      ]
+    },
     "RequestBody13":{
       "type":"object",
       "properties":{
@@ -1580,7 +1611,7 @@
         }
       }
     },
-    "AnonymousDef":{
+    "R2002":{
       "type":"object",
       "required":[
         "id"
@@ -1624,7 +1655,7 @@
         }
       }
     },
-    "AnonymousDef2":{
+    "R2003":{
       "type":"object",
       "required":[
         "deleted"
@@ -1647,7 +1678,7 @@
         }
       }
     },
-    "AnonymousDef3":{
+    "R2004":{
       "type":"object",
       "required":[
         "updated"
@@ -2168,7 +2199,7 @@
         }
       }
     },
-    "AnonymousDef4":{
+    "R2005":{
       "type":"object",
       "properties":{
         "dropped":{
@@ -2177,7 +2208,7 @@
         }
       }
     },
-    "AnonymousDef5":{
+    "R2006":{
       "type":"object",
       "properties":{
         "cleared":{
@@ -2186,7 +2217,7 @@
         }
       }
     },
-    "AnonymousDef6":{
+    "R2007":{
       "type":"object",
       "properties":{
         "added":{
@@ -2226,7 +2257,7 @@
         }
       }
     },
-    "AnonymousDef7":{
+    "R2008":{
       "type":"object",
       "properties":{
         "removed":{
@@ -2268,6 +2299,27 @@
           "$ref":"#/definitions/CountOnly"
         }
       }
+    },
+    "R2009":{
+      "allOf":[
+        {
+          "$ref":"#/definitions/DictionaryDetails"
+        },
+        {
+          "type":"object",
+          "properties":{
+            "created":{
+              "type":"boolean",
+              "format":"integer",
+              "default":"1"
+            },
+            "matched":{
+              "type":"boolean",
+              "format":"integer"
+            }
+          }
+        }
+      ]
     },
     "RequestBody33":{
       "type":"object",
@@ -2422,6 +2474,29 @@
         }
       }
     },
+    "R20010":{
+      "allOf":[
+        {
+          "$ref":"#/definitions/DictionaryItemDetails"
+        },
+        {
+          "type":"object",
+          "properties":{
+            "dictionary":{
+              "type":"object",
+              "properties":{
+                "id":{
+                  "type":"integer"
+                },
+                "name":{
+                  "type":"string"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
     "AddTermsResult":{
       "title":"AddTermsResult",
       "type":"object",
@@ -2508,7 +2583,7 @@
         }
       }
     },
-    "AnonymousDef8":{
+    "R20011":{
       "type":"object",
       "properties":{
         "matched":{
@@ -2639,7 +2714,7 @@
         }
       }
     },
-    "AnonymousDef9":{
+    "R20012":{
       "type":"object",
       "required":[
         "text"
@@ -2653,14 +2728,14 @@
           "description":"list of concepts for this text",
           "type":"array",
           "items":{
-            "$ref":"#/definitions/AnonymousDef13"
+            "$ref":"#/definitions/AnonymousDef2"
           }
         },
         "relations":{
           "description":"list of relations for this text",
           "type":"array",
           "items":{
-            "$ref":"#/definitions/AnonymousDef13"
+            "$ref":"#/definitions/AnonymousDef2"
           }
         },
         "matches":{
@@ -2730,7 +2805,7 @@
         }
       }
     },
-    "AnonymousDef10":{
+    "R20013":{
       "type":"object",
       "required":[
         "text"
@@ -2779,7 +2854,7 @@
         }
       }
     },
-    "AnonymousDef11":{
+    "R20014":{
       "type":"object",
       "properties":{
         "rows":{
@@ -2787,7 +2862,7 @@
           "default":[
           ],
           "items":{
-            "$ref":"#/definitions/AnonymousDef14"
+            "$ref":"#/definitions/AnonymousDef3"
           }
         }
       }
@@ -2872,7 +2947,7 @@
         }
       }
     },
-    "AnonymousDef12":{
+    "AnonymousDef":{
       "type":"object",
       "required":[
         "id",
@@ -3298,7 +3373,7 @@
         }
       }
     },
-    "AnonymousDef13":{
+    "AnonymousDef2":{
       "type":"object",
       "properties":{
         "value":{
@@ -3312,7 +3387,7 @@
         }
       }
     },
-    "AnonymousDef14":{
+    "AnonymousDef3":{
       "type":"object"
     },
     "MatchedItem":{
@@ -4044,35 +4119,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "allOf":[
-                {
-                  "$ref":"#/definitions/SourceList"
-                },
-                {
-                  "type":"object",
-                  "properties":{
-                    "score":{
-                      "type":"number",
-                      "description":"score expressing the similarity between this record and the seed document"
-                    },
-                    "percentageMatched":{
-                      "type":"number"
-                    },
-                    "percentageNew":{
-                      "type":"number"
-                    },
-                    "numberOfEntitiesInRefSource":{
-                      "type":"integer"
-                    },
-                    "numberOfEntitiesInCommon":{
-                      "type":"integer"
-                    },
-                    "numberOfEntitiesInThisSource":{
-                      "type":"integer"
-                    }
-                  }
-                }
-              ]
+              "$ref":"#/definitions/R200"
             }
           }
         }
@@ -4103,35 +4150,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "allOf":[
-                {
-                  "$ref":"#/definitions/SourceList"
-                },
-                {
-                  "type":"object",
-                  "properties":{
-                    "score":{
-                      "type":"number",
-                      "description":"score expressing the similarity between this record and the seed document"
-                    },
-                    "percentageMatched":{
-                      "type":"number"
-                    },
-                    "percentageNew":{
-                      "type":"number"
-                    },
-                    "numberOfEntitiesInRefSource":{
-                      "type":"integer"
-                    },
-                    "numberOfEntitiesInCommon":{
-                      "type":"integer"
-                    },
-                    "numberOfEntitiesInThisSource":{
-                      "type":"integer"
-                    }
-                  }
-                }
-              ]
+              "$ref":"#/definitions/R200"
             }
           }
         }
@@ -4217,7 +4236,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef"
+              "$ref":"#/definitions/R2002"
             }
           }
         }
@@ -4246,7 +4265,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef2"
+              "$ref":"#/definitions/R2003"
             }
           }
         }
@@ -4281,7 +4300,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef2"
+              "$ref":"#/definitions/R2003"
             }
           }
         }
@@ -4310,7 +4329,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef2"
+              "$ref":"#/definitions/R2003"
             }
           }
         }
@@ -4347,7 +4366,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef3"
+              "$ref":"#/definitions/R2004"
             }
           }
         }
@@ -4976,7 +4995,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef4"
+              "$ref":"#/definitions/R2005"
             }
           }
         }
@@ -5003,7 +5022,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef4"
+              "$ref":"#/definitions/R2005"
             }
           }
         }
@@ -5032,7 +5051,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef4"
+              "$ref":"#/definitions/R2005"
             }
           }
         }
@@ -5061,7 +5080,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef5"
+              "$ref":"#/definitions/R2006"
             }
           }
         }
@@ -5088,7 +5107,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef5"
+              "$ref":"#/definitions/R2006"
             }
           }
         }
@@ -5124,7 +5143,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef6"
+              "$ref":"#/definitions/R2007"
             }
           }
         }
@@ -5166,7 +5185,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef6"
+              "$ref":"#/definitions/R2007"
             }
           }
         }
@@ -5204,7 +5223,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef6"
+              "$ref":"#/definitions/R2007"
             }
           }
         }
@@ -5240,7 +5259,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef7"
+              "$ref":"#/definitions/R2008"
             }
           }
         }
@@ -5282,7 +5301,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef7"
+              "$ref":"#/definitions/R2008"
             }
           }
         }
@@ -5320,7 +5339,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef7"
+              "$ref":"#/definitions/R2008"
             }
           }
         }
@@ -5399,25 +5418,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "allOf":[
-                {
-                  "$ref":"#/definitions/DictionaryDetails"
-                },
-                {
-                  "type":"object",
-                  "properties":{
-                    "created":{
-                      "type":"boolean",
-                      "format":"integer",
-                      "default":"1"
-                    },
-                    "matched":{
-                      "type":"boolean",
-                      "format":"integer"
-                    }
-                  }
-                }
-              ]
+              "$ref":"#/definitions/R2009"
             }
           }
         }
@@ -5452,25 +5453,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "allOf":[
-                {
-                  "$ref":"#/definitions/DictionaryDetails"
-                },
-                {
-                  "type":"object",
-                  "properties":{
-                    "created":{
-                      "type":"boolean",
-                      "format":"integer",
-                      "default":"1"
-                    },
-                    "matched":{
-                      "type":"boolean",
-                      "format":"integer"
-                    }
-                  }
-                }
-              ]
+              "$ref":"#/definitions/R2009"
             }
           }
         }
@@ -5501,25 +5484,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "allOf":[
-                {
-                  "$ref":"#/definitions/DictionaryDetails"
-                },
-                {
-                  "type":"object",
-                  "properties":{
-                    "created":{
-                      "type":"boolean",
-                      "format":"integer",
-                      "default":"1"
-                    },
-                    "matched":{
-                      "type":"boolean",
-                      "format":"integer"
-                    }
-                  }
-                }
-              ]
+              "$ref":"#/definitions/R2009"
             }
           }
         }
@@ -5604,7 +5569,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef4"
+              "$ref":"#/definitions/R2005"
             }
           }
         }
@@ -5631,7 +5596,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef4"
+              "$ref":"#/definitions/R2005"
             }
           }
         }
@@ -5660,7 +5625,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef4"
+              "$ref":"#/definitions/R2005"
             }
           }
         }
@@ -5758,27 +5723,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "allOf":[
-                {
-                  "$ref":"#/definitions/DictionaryItemDetails"
-                },
-                {
-                  "type":"object",
-                  "properties":{
-                    "dictionary":{
-                      "type":"object",
-                      "properties":{
-                        "id":{
-                          "type":"integer"
-                        },
-                        "name":{
-                          "type":"string"
-                        }
-                      }
-                    }
-                  }
-                }
-              ]
+              "$ref":"#/definitions/R20010"
             }
           }
         }
@@ -5805,27 +5750,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "allOf":[
-                {
-                  "$ref":"#/definitions/DictionaryItemDetails"
-                },
-                {
-                  "type":"object",
-                  "properties":{
-                    "dictionary":{
-                      "type":"object",
-                      "properties":{
-                        "id":{
-                          "type":"integer"
-                        },
-                        "name":{
-                          "type":"string"
-                        }
-                      }
-                    }
-                  }
-                }
-              ]
+              "$ref":"#/definitions/R20010"
             }
           }
         }
@@ -5854,7 +5779,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef4"
+              "$ref":"#/definitions/R2005"
             }
           }
         }
@@ -5881,7 +5806,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef4"
+              "$ref":"#/definitions/R2005"
             }
           }
         }
@@ -5910,7 +5835,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef4"
+              "$ref":"#/definitions/R2005"
             }
           }
         }
@@ -6008,7 +5933,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef4"
+              "$ref":"#/definitions/R2005"
             }
           }
         }
@@ -6035,7 +5960,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef4"
+              "$ref":"#/definitions/R2005"
             }
           }
         }
@@ -6064,7 +5989,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef4"
+              "$ref":"#/definitions/R2005"
             }
           }
         }
@@ -6086,7 +6011,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef8"
+              "$ref":"#/definitions/R20011"
             }
           }
         }
@@ -6114,7 +6039,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef8"
+              "$ref":"#/definitions/R20011"
             }
           }
         }
@@ -6139,7 +6064,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef8"
+              "$ref":"#/definitions/R20011"
             }
           }
         }
@@ -6170,7 +6095,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef8"
+              "$ref":"#/definitions/R20011"
             }
           }
         }
@@ -6325,7 +6250,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef9"
+              "$ref":"#/definitions/R20012"
             }
           }
         }
@@ -6355,7 +6280,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef9"
+              "$ref":"#/definitions/R20012"
             }
           }
         }
@@ -6382,7 +6307,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef10"
+              "$ref":"#/definitions/R20013"
             }
           }
         }
@@ -6412,7 +6337,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef10"
+              "$ref":"#/definitions/R20013"
             }
           }
         }
@@ -6574,7 +6499,7 @@
           "200":{
             "description":"Successful response",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef11"
+              "$ref":"#/definitions/R20014"
             }
           }
         }

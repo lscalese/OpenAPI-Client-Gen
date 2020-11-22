@@ -38,6 +38,16 @@
                         "schema": {
                             "$ref":"#/definitions/object1"
                         }
+                    },
+                    "204" : {
+                        "description": "OK",
+                        "schema" : {
+                            "type" : "array",
+                            "items": {
+                                "$ref":"#/definitions/object1"
+                            }
+                        }
+                        
                     }
                 },
                 "operationId": "FirstServiceId"
@@ -105,6 +115,132 @@
                     }
                 }
             }
+        },
+        "/withallof" : {
+            "get": {
+                "description" : "allOf usage case",
+                "parameters": [
+                    {
+                        "$ref" :  "#/parameters/allOfParameters"
+                    }
+                ],
+                "responses": {
+                    "200" : {
+                        "description": "OK",
+                        "schema" : {
+                            "$ref": "#/definitions/testSimpleAllOf"
+                        }
+                    },
+                    "201" : {
+                        "description": "test schema with allOf",
+                        "schema" : {
+                            "title": "nested201AllOf",
+                            "allOf" : [
+                                {
+                                    "$ref": "#/definitions/object1"
+                                },
+                                {
+                                    "type" : "object",
+                                    "properties": {
+                                        "allOf201AddInfo" :{
+                                            "type" : "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "204" : {
+                        "description": "test schema with array of allOf",
+                        "schema" : {
+                            "title": "nested204ArrayAllOf",
+                            "type" : "array",
+                            "items": {
+                                "allOf": [
+                                    {
+                                        "$ref" : "#/definitions/object1"
+                                    },
+                                    {
+                                        "type" : "object",
+                                        "properties": {
+                                            "additionalArrayAllOf" :{
+                                                "type" : "string"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                },
+                "operationId": "GetWithAllOf"
+
+            },
+            "post": {
+                "description" : "allOf usage case",
+                "operationId": "PostWithAllOf",
+                "parameters": [
+                    {
+                        "name": "NestedallOfParameters",
+                        "in" : "body",
+                        "required": true,
+                        "schema" : {
+                            "allOf": [
+                                {
+                                    "$ref" :  "#/definitions/object1"
+                                },
+                                {
+                                    "type" : "object",
+                                    "properties": {
+                                        "aFieldInAllOf2" : {
+                                            "type" : "string"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            },
+            "put": {
+                "description" : "allOf usage case",
+                "operationId": "PutWithAllOf",
+                "parameters": [
+                    {
+                        "name": "ListNestedallOfParameters",
+                        "in" : "body",
+                        "required": true,
+                        "schema" : {
+                            "type" : "array",
+                            "items": {
+                                "allOf": [
+                                    {
+                                        "$ref" :  "#/definitions/object1"
+                                    },
+                                    {
+                                        "type" : "object",
+                                        "properties": {
+                                            "aFieldInAllOf3" : {
+                                                "type" : "string"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
         }
     },
     "parameters": {
@@ -121,7 +257,27 @@
             "in" : "header",
             "required" : true,
             "type" : "string"
-        } 
+        },
+        "allOfParameters" :{
+            "name": "allOfParameters",
+            "in" : "body",
+            "required": true,
+            "schema" : {
+                "allOf": [
+                    {
+                        "$ref" :  "#/definitions/object1"
+                    },
+                    {
+                        "type" : "object",
+                        "properties": {
+                            "aFieldInAllOf" : {
+                                "type" : "string"
+                            }
+                        }
+                    }
+                ]
+            }
+        }
     },
     "definitions": {
         "object1": {
@@ -134,6 +290,27 @@
         },
         "simpleTypeString" : {
             "type" : "string"
+        },
+        "testSimpleAllOf" : {
+            "description": "testAllOf",
+            "type" : "object",
+            "allOf": [
+                {
+                    "$ref": "#/definitions/object1"
+                },
+                {
+                    "type" : "object",
+                    "properties": {
+                        "additionalInfo1" : {
+                            "type" : "string"
+                        },
+                        "additionalInfo2" : {
+                            "type" : "string"
+                        }
+                    }
+                }
+                
+            ]
         }
     }
 }

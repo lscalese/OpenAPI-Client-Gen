@@ -558,7 +558,7 @@
           "200":{
             "description":"successful operation",
             "schema":{
-              "$ref":"#/definitions/AnonymousDef"
+              "$ref":"#/definitions/R200"
             }
           }
         },
@@ -1046,7 +1046,7 @@
         "name":"User"
       }
     },
-    "AnonymousDef":{
+    "R200":{
       "type":"object",
       "additionalProperties":{
         "type":"integer",
