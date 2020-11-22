@@ -21,8 +21,8 @@ ClassMethod Process(specClass As %String = "PetStore.spec") As %Status
     Set iterDefinitions = definitions.%GetIterator()
     while iterDefinitions.%GetNext(.key , .value ) {
         ;w !,"key|",key,"|",value.type,"|",definitionPackage_"."_key
-        d:((value.type = "object")) ..GenerateClass(definitionPackage_"."_key,value)
-		;w:((value.type = "object")) "|",$System.Status.GetOneErrorText(a)
+        s:((value.type = "object")||$isobject(value.allOf)) a=..GenerateClass(definitionPackage_"."_key,value)
+		;w:((value.type = "object")||$isobject(value.allOf)) "|",$System.Status.GetOneErrorText(a)
     }
     
 	Quit $System.OBJ.CompilePackage(definitionPackage)
@@ -37,10 +37,6 @@ ClassMethod GenerateClass(name As %String, object As %DynamicObject) As %Status
 	// Add super class
 	Set parent="%JSON.Adaptor,%RegisteredObject"
 	If $Isobject(object.allOf) {
-		;Set iterAllOf = object.allOf.%GetIterator()
-		;While iterAllOf.%GetNext(.allOfKey, .allOfValue) {
-		;	Set parent=parent _ "," _$Replace(object.allOf."$ref","#/definitions/", "")
-		;}
 		Set:$isobject(object.allOf.%Get(0)) parent=parent _ "," _$Replace(object.allOf.%Get(0)."$ref","#/definitions/", "")
 		Set:$isobject(object.allOf.%Get(1)) objectProperties = object.allOf.%Get(1)
 	} 

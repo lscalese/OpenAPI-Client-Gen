@@ -204,10 +204,10 @@ Method fixNestedObject() As %Status
 
                 While iterResp.%GetNext(.httpStatusCode , .codeObj ) {
                     
-                    If (codeObj.schema.type = "object") && (codeObj.schema."$ref" = "") {
+                    If (codeObj.schema.type = "object") && (codeObj.schema."$ref" = "") || $ISOBJECT(codeObj.schema.allOf) {
                         
                         Set name = ..getUniqueName( codeObj.schema.title, codeObj.schema )
-                        ;w !,name, " ",name," ",$e(codeObj.schema.%ToJSON(),1,80)
+                        w !,name, " ",name," ",$e(codeObj.schema.%ToJSON(),1,80)
                         Do ..spec.definitions.%Set(name, {}.%FromJSON(codeObj.schema.%ToJSON()))
                         Set codeObj.schema = { "$ref" : ("#/definitions/" _ name) }
 
@@ -235,7 +235,7 @@ Method fixNestedObject() As %Status
                     
                     continue:'$ISOBJECT(paramDef) ; To ignore __comment 
 
-                    If (paramDef.schema.type = "object") && (paramDef.schema."$ref" = "") {
+                    If (paramDef.schema.type = "object") && (paramDef.schema."$ref" = "") || $ISOBJECT(paramDef.schema.allOf) {
                         
                         Set name = ..getUniqueName( paramDef.name, paramDef.schema )
                         
