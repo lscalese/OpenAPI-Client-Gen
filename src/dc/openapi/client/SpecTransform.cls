@@ -170,7 +170,9 @@ Method fixNestedObject() As %Status
     #dim serviceDefinition As %Library.DynamicObject
     #dim method As %String
 
-    
+    #define zMoveCondition(%obj) ( %obj.schema.type = "object" && (%obj.schema."$ref" = "") || $ISOBJECT(%obj.schema.allOf) )
+    #define zMoveArrCondition(%obj) ( %obj.schema.type = "array" && $Isobject(%obj.schema.items.allOf) )
+
     While iter.%GetNext(.serviceLocation , .value ) {
 
        
@@ -204,14 +206,15 @@ Method fixNestedObject() As %Status
 
                 While iterResp.%GetNext(.httpStatusCode , .codeObj ) {
                     
-                    If (codeObj.schema.type = "object") && (codeObj.schema."$ref" = "") || $ISOBJECT(codeObj.schema.allOf) {
+                    If $$$zMoveCondition(codeObj) {
                         
-                        Set name = ..getUniqueName( codeObj.schema.title, codeObj.schema )
-                        w !,name, " ",name," ",$e(codeObj.schema.%ToJSON(),1,80)
-                        Do ..spec.definitions.%Set(name, {}.%FromJSON(codeObj.schema.%ToJSON()))
-                        Set codeObj.schema = { "$ref" : ("#/definitions/" _ name) }
+                        Do mvToDef( httpStatusCode, codeObj )
 
-                    } 
+                    } ElseIf $$$zMoveArrCondition(codeObj) {
+
+                        Do mvArray( httpStatusCode, codeObj )
+
+                    }
 
                     ; Fix an issue when a yaml has been convert to json
                     ; ex key 200 quoted --> { "\"200\"": { ... }}
@@ -235,28 +238,62 @@ Method fixNestedObject() As %Status
                     
                     continue:'$ISOBJECT(paramDef) ; To ignore __comment 
 
-                    If (paramDef.schema.type = "object") && (paramDef.schema."$ref" = "") || $ISOBJECT(paramDef.schema.allOf) {
+                    If $$$zMoveCondition(paramDef) {
                         
-                        Set name = ..getUniqueName( paramDef.name, paramDef.schema )
-                        
-                        Do ..spec.definitions.%Set(name, {}.%FromJSON(paramDef.schema.%ToJSON()))
+                        Do mvToDef( keyParameter, paramDef )
 
-                        ; set reference to parameters
-                        Set paramDef.schema = { "$ref" : ("#/definitions/" _ name) }
+                    } ElseIf $$$zMoveArrCondition(paramDef) {
 
-                    } 
+                        Do mvArray( keyParameter, paramDef )
+
+                    }
                     
                 }
             }
-
-
             
         }
 
 
     }
+ 
+    Quit:'$Isobject( ..spec.parameters ) sc
+
+    ; move parameters structure definition to #/definitions/
+
+    Set iter = ..spec.parameters.%GetIterator()
+
+    While iter.%GetNext( .keyParam, .param) {
+        
+        Continue:'$ISOBJECT(param)
+
+        
+        If $$$zMoveCondition(param) {
+
+            Do mvToDef(keyParam, param)
+
+        } ElseIf $$$zMoveArrCondition(param) {
+
+            Do mvArray(keyParam, param)
+
+        }
+    }
 
     Return sc
+ 
+mvToDef(key, obj)
+    Set name = $Select( obj.schema.title'="" : obj.schema.title, obj.name'="": obj.name, 1: key )
+    Set name = ..getUniqueName( name , obj.schema )
+    Do ..spec.definitions.%Set(name, {}.%FromJSON(obj.schema.%ToJSON()))
+    Set obj.schema = { "$ref" : ("#/definitions/" _ name) }
+    Quit
+
+mvArray(key, obj)
+    ;Set name = ..getUniqueName( obj.schema.title, obj.schema.items )
+    Set name = $Select( obj.schema.title'="" : obj.schema.title, obj.name'="": obj.name, 1: key )
+    Set name = ..getUniqueName( name, obj.schema.items )
+    Do ..spec.definitions.%Set(name, {}.%FromJSON(obj.schema.items.%ToJSON()))
+    Set obj.schema.items = { "$ref" : ("#/definitions/" _ name) }
+    Quit
 }
 
 Method fixOperationId() As %Status
@@ -368,7 +405,7 @@ ClassMethod translateOperationId(name As %String) As %IO.StringStream
 
 ClassMethod translateName(name As %String) As %IO.StringStream
 {
-    Return $Translate(name, "_", "")
+    Return $Translate(name, "_ ", "")
 }
 
 ClassMethod cleanOperationId(originalId As %String) As %String
