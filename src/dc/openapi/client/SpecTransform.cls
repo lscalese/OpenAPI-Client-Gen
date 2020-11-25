@@ -93,7 +93,6 @@ Method flatDefinition(ByRef move As %Integer) As %Status
                 Do def.properties.%Remove(keyP)
                 Do def.properties.%Set(keyP, {  "$ref" : ("#/definitions/" _ name) })
                 
-                
                 Set move = move + 1
             } 
 
