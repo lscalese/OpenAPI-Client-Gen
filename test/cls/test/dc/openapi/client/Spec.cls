@@ -158,6 +158,26 @@ Method TestSwaggerModel() As %Status
     Set propertyCheck( appName _ ".model.Definition.ListNestedallOfParameters", "aFieldInAllOf3", "Type" ) = "%String"
     
 
+    /* CHECK Method Exists */
+    #define MethodId(%class,%method) appName _ "." _ %class _ "||" _ %method
+
+    Set methodExists( $$$MethodId("rest.REST", "GETFirstServiceId") , "FormalSpec" ) = "id:%String"
+    Set methodExists( $$$MethodId("rest.REST", "GETGetWithAllOf") , "FormalSpec") = ""
+    Set methodExists( $$$MethodId("rest.REST", "POSTPostWithAllOf") , "FormalSpec" ) = ""
+    Set methodExists( $$$MethodId("rest.REST", "POSTpostfirstservice") , "FormalSpec" ) = ""
+    Set methodExists( $$$MethodId("rest.REST", "POSTpostnestedobject") , "FormalSpec" ) = ""
+    Set methodExists( $$$MethodId("rest.REST", "PUTPutWithAllOf") , "FormalSpec" ) = ""
+    Set methodExists( $$$MethodId("rest.REST", "SwaggerSpec") , "FormalSpec" ) = ""
+    
+    Set methodExists( $$$MethodId("bo.Operation", "GETFirstServiceId") , "FormalSpec" ) = $$$FormatText("pRequest:%1.msg.FirstServiceIdRequest,pResponse:%1.msg.GenericResponse",appName)
+    Set methodExists( $$$MethodId("bo.Operation", "GETGetWithAllOf") , "FormalSpec" ) = $$$FormatText("pRequest:%1.msg.GetWithAllOfRequest,pResponse:%1.msg.GenericResponse",appName)
+    Set methodExists( $$$MethodId("bo.Operation", "GetRequest") , "FormalSpec" ) = "pRequest:Ens.Request"
+    Set methodExists( $$$MethodId("bo.Operation", "POSTPostWithAllOf") , "FormalSpec" ) = $$$FormatText("pRequest:%1.msg.PostWithAllOfRequest,pResponse:%1.msg.GenericResponse",appName)
+    Set methodExists( $$$MethodId("bo.Operation", "POSTpostfirstservice") , "FormalSpec" ) = $$$FormatText("pRequest:%1.msg.postfirstserviceRequest,pResponse:%1.msg.GenericResponse",appName)
+    Set methodExists( $$$MethodId("bo.Operation", "POSTpostnestedobject") , "FormalSpec" ) = $$$FormatText("pRequest:%1.msg.postnestedobjectRequest,pResponse:%1.msg.GenericResponse",appName)
+    Set methodExists( $$$MethodId("bo.Operation", "PUTPutWithAllOf") , "FormalSpec" ) = $$$FormatText("pRequest:%1.msg.PutWithAllOfRequest,pResponse:%1.msg.GenericResponse",appName)
+    Set methodExists( $$$MethodId("bo.Operation", "genericProcessResponse") , "FormalSpec" ) = $$$FormatText("pRequest:Ens.Request,pResponse:%1.msg.GenericResponse,caller:%String,status:%Status,pHttpResponse:%Net.HttpResponse,parsedResponseClassName:%String",appName)
+
     TSTART
     Try {
         Set sc = ##class(dc.openapi.client.Spec).generateApp( appName , file )
@@ -184,12 +204,25 @@ Method TestSwaggerModel() As %Status
                 Set propertyName = $Order( propertyCheck( class, propertyName ) )
                 Quit:propertyName=""
 
-                Kill attributes
                 Merge attributes = propertyCheck( class, propertyName )
 
                 Do $$$AssertStatusOK( ..checkProperty( class, propertyName, .attributes ), $$$FormatText("Check Class property %1.%2", class, propertyName ) )
+                Kill attributes
             }
         }
+
+        Set methodId = ""
+        For  {
+            Set methodId = $Order(methodExists( methodId ) )
+            Quit:methodId=""
+            
+            Merge attributes = methodExists( methodId )
+            
+            Do $$$AssertStatusOK( ..CheckMethod( methodId , .attributes ), $$$FormatText("Check Method %1", $Replace(methodId, "||", ":")  ) )
+            Kill attributes
+        }
+
+        
 
     } Catch (ex) {
         Set sc = ex.AsStatus()
@@ -197,6 +230,10 @@ Method TestSwaggerModel() As %Status
     TROLLBACK
 
     Do $$$AssertStatusOK( sc , "TestSwaggerModel" )
+
+    Quit sc
+
+CheckMethod(methodId,list)
 
     Quit sc
 }
@@ -215,6 +252,27 @@ ClassMethod checkProperty(class As %String, name As %String, attribute As %Binar
 
         If $Property( property, key ) '= attrValue {
             Return $$$ERROR($$$GeneralError, $$$FormatText("Something wrong with %1 and value %2 (expected %3)", key, $Property( property, key ), attrValue ))
+        }
+    }
+
+    Quit sc
+}
+
+ClassMethod CheckMethod(methodId As %String, attribute As %Binary) As %Status
+{
+    #dim sc As %Status = $$$OK
+
+    Set method = ##class(%Dictionary.MethodDefinition).%OpenId( methodId, , .sc)
+    Quit:$$$ISERR(sc) sc
+
+    Set key = ""
+    For  {
+        
+        Set key = $Order(attribute( key ), 1, attrValue )
+        Quit:key=""
+
+        If $Property( method , key ) '= attrValue {
+            Return $$$ERROR($$$GeneralError, $$$FormatText("Something wrong with Method %1, attribute %2 with value %3 (expected %4)", $Replace(methodId, "||", ":"), key, $Property( method, key ), attrValue ))
         }
     }
 
