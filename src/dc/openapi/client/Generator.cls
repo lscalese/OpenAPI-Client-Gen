@@ -202,28 +202,16 @@ Method models() As %Status [ Private ]
     ; $$$ThrowOnError(##class(Grongier.OpenApi.Definition).Process(..packageModel_".spec"))
     ; issue with the library, code has been copied and fixed
     ; todo : discuss with Guillaume to fix the library
-    $$$ThrowOnError(##class(dc.openapi.client.Definition).Process(..packageModel_".spec"))
+    ;$$$ThrowOnError(##class(dc.openapi.client.Definition).Process(..packageModel_".spec"))
     
     ; We need %Persistent and %XML.Adaptor for Ensemble architecture.
     ; 
-    Set key = ..packageDefinition_"."
-    
-    For  {
 
-        Set key = $Order(^oddDEF(key))
-        Quit:(key="")||(key'[..packageDefinition_".")
+    Set modelsGen = ##class(dc.openapi.client.Definition).%New( ..spec , ..packageDefinition , "%Persistent,%JSON.Adaptor,%XML.Adaptor" )
+    Set modelsGen.compile = 0   ; package will be compiled with the production
+    Set modelsGen.compileFlags = ..#CFLAGS
 
-        Set class  = ##class(%Dictionary.ClassDefinition).%OpenId(key)
-        
-        If class.Super '[ "Persistent" { ; don't add if it's already done
-
-            Set class.Super = "%Persistent,%XML.Adaptor,"_class.Super
-            $$$ThrowOnError(class.%Save())
-        
-        }
-    }
-
-    Return sc
+    Quit modelsGen.mProcess()
 }
 
 /// Generate Response classes<br/>
@@ -592,7 +580,8 @@ Method ensRequestClass(serviceDefinition As %Library.DynamicObject, value As %Li
         } Else {
             
             Set requestParamLocation =  "accept:header:accept:%String"
-            Set parametersObject = $Select($ISOBJECT(serviceDefinition.parameters):serviceDefinition.parameters, $ISOBJECT(value.parameters):value.parameters,1:"")
+            ;Set parametersObject = $Select($ISOBJECT(serviceDefinition.parameters):serviceDefinition.parameters, $ISOBJECT(value.parameters):value.parameters,1:"")
+            Set parametersObject = serviceDefinition.parameters
             
             If $Isobject(parametersObject) {
 
