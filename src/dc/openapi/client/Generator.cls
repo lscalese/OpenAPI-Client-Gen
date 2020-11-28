@@ -56,11 +56,15 @@ Property utilsClassname As %String [ Private ];
 
 Property specClassName As %String [ Private ];
 
+Property httpClientClassName As %Status [ Private ];
+
 Property UrlMap As %Dictionary.XDataDefinition [ InitialExpression = {##class(%Dictionary.XDataDefinition).%New()}, Private ];
 
 Property debug As %Boolean [ InitialExpression = {$Get(%zDebug,0)} ];
 
 Property tmp As %Binary [ MultiDimensional ];
+
+// Property ensSuperClass As %Boolean [ InitialExpression = 1, Private ];
 
 /// To avoid erasing existing code, the generator don't overwrite existing classes.  These classes are skiped.<br/>
 /// For generator testing\development purpose, It could be usefull to erase existing classes<br/>
@@ -94,6 +98,7 @@ Method %OnNew(spec As %Library.DynamicObject, application As %String, compile As
     Set ..restClassName = ..packageRest _ ".REST"
     Set ..utilsClassname = ..application _ ".Utils"
     Set ..specClassName = ..packageModel _ ".spec"
+    Set ..httpClientClassName = ..application _ ".HttpClient"
 
     Set ..UrlMap = ##class(%Dictionary.XDataDefinition).%New()
     Set ..UrlMap.Name = "UrlMap"
@@ -196,20 +201,9 @@ ClassMethod packageExists(packageName As %String) As %Boolean
 /// https://github.com/grongierisc/objectscript-openapi-definition
 Method models() As %Status [ Private ]
 {
-    #dim sc As %Status = $$$OK
-    #dim class As %Dictionary.ClassDefinition
-    
-    ; $$$ThrowOnError(##class(Grongier.OpenApi.Definition).Process(..packageModel_".spec"))
-    ; issue with the library, code has been copied and fixed
-    ; todo : discuss with Guillaume to fix the library
-    ;$$$ThrowOnError(##class(dc.openapi.client.Definition).Process(..packageModel_".spec"))
-    
-    ; We need %Persistent and %XML.Adaptor for Ensemble architecture.
-    ; 
-
-    Set modelsGen = ##class(dc.openapi.client.Definition).%New( ..spec , ..packageDefinition , "%Persistent,%JSON.Adaptor,%XML.Adaptor" )
+    Set modelsGen = ##class(Grongier.OpenApi.Definition).%New( ..spec , ..packageDefinition , "%Persistent,%JSON.Adaptor,%XML.Adaptor" )
     Set modelsGen.compile = 0   ; package will be compiled with the production
-    Set modelsGen.compileFlags = ..#CFLAGS
+    ; Set modelsGen.compileFlags = ..#CFLAGS
 
     Quit modelsGen.mProcess()
 }

@@ -232,10 +232,6 @@ Method TestSwaggerModel() As %Status
     Do $$$AssertStatusOK( sc , "TestSwaggerModel" )
 
     Quit sc
-
-CheckMethod(methodId,list)
-
-    Quit sc
 }
 
 ClassMethod checkProperty(class As %String, name As %String, attribute As %Binary) As %Status
