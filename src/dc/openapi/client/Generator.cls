@@ -979,7 +979,7 @@ Method addOperationMethod(serviceDefinition As %Library.DynamicObject, cDef As %
     If cDef.Super [ "Ens.BusinessOperation" {
         Set mDef.FormalSpec = $$$FormatText("pRequest:%1,pResponse:%2", ensRequestClassName, ..ensGenericResponseClassName)
     } Else {
-        Set mDef.FormalSpec = $$$FormatText("pRequest:%1,pResponse:%2,pHttpRequestIn:%Net.HttpRequest=..GetRequest(),*pHttpResponse:%Net.HttpResponse", ensRequestClassName, ..ensGenericResponseClassName)
+        Set mDef.FormalSpec = $$$FormatText("pRequest:%1,*pResponse:%2,pHttpRequestIn:%Net.HttpRequest=..GetRequest(pRequest),*pHttpResponse:%Net.HttpResponse", ensRequestClassName, ..ensGenericResponseClassName)
     }
     Set mDef.ReturnType = "%Status"
     

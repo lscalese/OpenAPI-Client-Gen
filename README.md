@@ -291,28 +291,71 @@ In short :
 Set features("simpleHttpClientOnly") = 1
 Set sc = ##class(dc.openapi.client.Spec).generateApp("petshopclient", "https://petstore.swagger.io/v2/swagger.json", .features)
 ```
-<!--
+
+Http client class is `petshopclient.HttpClient`.  
+Take a look, there is a method for each service defined in specification.  
+
 ### Test client
+
+Request example.  
 
 Create pet  
 
+
 ```
 Set pet = {"category":{"id":0,"name":"string"},"id":456789,"name":"Kitty_Galore","photoUrls":["string"],"tags":[{"id":0,"name":"string"}],"status":"available"}
-Set requestObject = ##class().%New()
-Do requestObject.pet.%JSONImport(pet) 
+Set addPetRequest = ##class(petshopclient.msg.AddPetRequest).%New()
+Set petModel = ##class(petshopclient.model.Definition.Pet).%New()
+Do petModel.%JSONImport(pet)
+Set addPetRequest.bodybody = petModel
+Set addPetRequest.accept = "application/json"
+Set addPetRequest.consume = "application/json"
 Set httpClient = ##class(petshopclient.HttpClient).%New()
-Set sc = httpClient.POSTaddPet(requestObject, .responseObject, , .httpResponse )
-
-Write !, "Http status : ", responseObject.httpStatusCode
-Write !, "Response Body : ", !,responseObject.body.Read()
-
+Set sc = httpClient.POSTAddPet(addPetRequest, .response, , .httpResponse )
+Write !, "Operation Status : ",$SYSTEM.Status.GetOneErrorText(sc)
+Write !, "Http status : ", response.httpStatusCode
+Write !, "Response Body : ", !,response.body.Read()
 ```
 
 Get created pet  
 
 ```
+Set getPetRequest = ##class(petshopclient.msg.GetPetByIdRequest).%New()
+Set getPetRequest.pathpetId = 456789
+Set getPetRequest.accept = "application/json"
+Set getPetRequest.consume = "application/json"
+Set httpClient = ##class(petshopclient.HttpClient).%New()
+Set sc = httpClient.GETGetPetById(getPetRequest, .response, , .httpResponse )
+Write !, "Operation Status : ",$SYSTEM.Status.GetOneErrorText(sc)
+Write !, "Http status : ", response.httpStatusCode
+Write !, "Response body : ", !,response.body.Read()
+Write !,!, "Parsed Response (pet name) : ", response.parsedResponse.Pet.name
 ```
--->
+
+By Default, `%Net.HttpRequest` is built by `GetRequest` method.  
+You can built your own %Net.HttpRequest object and use it by third argument :  
+
+```
+Set pHttpRequestIn = ##class(%Net.HttpRequest).%New()
+Set pHttpRequestIn.Server = "petstore.swagger.io"
+Set pHttpRequestIn.Https = 1
+Set pHttpRequestIn.SSLConfiguration = "default"
+
+Set getPetRequest = ##class(petshopclient.msg.GetPetByIdRequest).%New()
+Set getPetRequest.pathpetId = 456789
+Set getPetRequest.accept = "application/json"
+Set getPetRequest.consume = "application/json"
+Set httpClient = ##class(petshopclient.HttpClient).%New()
+
+Set sc = httpClient.GETGetPetById(getPetRequest, .response, pHttpRequestIn , .httpResponse )
+
+Write !, "Operation Status : ",$SYSTEM.Status.GetOneErrorText(sc)
+Write !, "Http status : ", response.httpStatusCode
+Write !, "Response body : ", !,response.body.Read()
+Write !,!, "Parsed Response (pet name) : ", response.parsedResponse.Pet.name
+```
+
+
 ## Code snippet
 
 ### Generate production on local machine
