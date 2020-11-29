@@ -12,10 +12,10 @@ Consider the generated Production\classes client as a template ready to use.
 &nbsp;
 ## Table of contents  
 &nbsp;
-1. [Production Sample](#Production-Sample)  
-2. [Simple Http Client Sample](#Simple-Http-Client-Sample)  
-3. [Installation ZPM](#Installation-ZPM)
-4. [Installation Docker](#Installation-Docker)  
+1. [Production Sample](https://github.com/lscalese/OpenAPI-Client-Gen/blob/master/README.md#Production-Sample)  
+2. [Simple Http Client Sample](https://github.com/lscalese/OpenAPI-Client-Gen/blob/master/README.md#Simple-Http-Client-Sample)  
+3. [Installation ZPM](https://github.com/lscalese/OpenAPI-Client-Gen/blob/master/README.md#Installation-ZPM)
+4. [Installation Docker](https://github.com/lscalese/OpenAPI-Client-Gen/blob/master/README.md#Installation-Docker)  
 &nbsp;
   
 ## Production Sample
