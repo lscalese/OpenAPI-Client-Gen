@@ -22,6 +22,9 @@ Property spec As %DynamicObject;
 
 Property application As %String;
 
+/// if true, only a simple http client is generated instead of an Interoperability Production.<br/>
+Property simpleHttpClientOnly As %Boolean [ InitialExpression = 0 ];
+
 Property compile As %Boolean [ InitialExpression = 1 ];
 
 Property ensOperationClassName As %String [ Private ];
@@ -64,7 +67,9 @@ Property debug As %Boolean [ InitialExpression = {$Get(%zDebug,0)} ];
 
 Property tmp As %Binary [ MultiDimensional ];
 
-// Property ensSuperClass As %Boolean [ InitialExpression = 1, Private ];
+Property ensGenericResponseSuper As %String [ InitialExpression = "%Persistent,Ens.Response", Internal, Private ];
+
+Property ensRequestSuper As %String [ InitialExpression = "%Persistent,Ens.Request", Internal, Private ];
 
 /// To avoid erasing existing code, the generator don't overwrite existing classes.  These classes are skiped.<br/>
 /// For generator testing\development purpose, It could be usefull to erase existing classes<br/>
@@ -73,13 +78,14 @@ Property overwriteIfExist As %Boolean [ InitialExpression = {+$Get(%zOverwriteIf
 
 Parameter METHODLIST = "get put post delete options head patch";
 
-Method %OnNew(spec As %Library.DynamicObject, application As %String, compile As %Boolean = {$$$YES}) As %Status
+Method %OnNew(spec As %Library.DynamicObject, application As %String, compile As %Boolean = {$$$YES}, simpleHttpClientOnly As %Boolean = 0) As %Status
 {
     #dim sc As %Status = $$$OK
 
     Set ..spec = spec
     Set ..application = application
     Set ..compile = compile
+    Set ..simpleHttpClientOnly = simpleHttpClientOnly
 
     Set ..packageRequest = ..application _ "."_ ..#PKGMSG
     Set ..packageBusinessServices = ..application _ "."_ ..#PKGBS
@@ -115,16 +121,23 @@ $Translate(name, "$_","")
 
 Method generate() As %Status
 {
+    If ..simpleHttpClientOnly {
+        Quit ..generateHttpClient()
+    }
+
+    Quit ..generateInteroperabilityProduction()
+}
+
+Method generateInteroperabilityProduction() As %Status
+{
     #dim sc As %Status = $$$OK
 
     TStart 
     
     Try {
         
-        If ..spec.swagger '= "2.0" {
-            $$$ThrowStatus($$$ERROR(5001,$$$FormatText("Currently this tool support only swagger 2.0 (swagger reached: %1).", ..spec.swagger)))
-        } 
-
+        
+        $$$ThrowOnError(..validateSpec())
         $$$ThrowOnError(..models())                 ; Use Grongier OpenAPI-Definition to generate model
         $$$ThrowOnError(..ensGenericResponse())     ; Generate Generic Response class
         $$$ThrowOnError(..ensOperationClass())      ; Generate Business Operation (without operation method)
@@ -170,11 +183,7 @@ Method generate() As %Status
         
         $$$ThrowOnError(..restProxyURLMAP())
        
-        If ..compile {
-            
-            Set sc = $system.OBJ.CompilePackage(..application, ..#CFLAGS)
-
-        }
+        Set:..compile sc = $system.OBJ.CompilePackage(..application, ..#CFLAGS)
         
     } Catch (ex) {
         Set sc = ex.AsStatus()
@@ -187,6 +196,71 @@ Method generate() As %Status
     }
 
     Return sc
+}
+
+Method generateHttpClient() As %Status
+{
+    #dim sc As %Status = $$$OK
+
+    TStart
+
+    Try {
+        
+        Set (..ensGenericResponseSuper,..ensRequestSuper) = "%Persistent"   ; Change default behavior to avoid using interoperability class.
+        
+        $$$ThrowOnError(..validateSpec())
+        $$$ThrowOnError(..models())                 ; Use Grongier OpenAPI-Definition to generate model
+        $$$ThrowOnError(..ensGenericResponse())     ; Generate Generic Response class
+        $$$ThrowOnError(..httpClientClass())
+
+        #dim iter As %Iterator.AbstractIterator = ..spec.paths.%GetIterator()
+        #dim serviceLocation As %String
+        #dim serviceDefinition As %Library.DynamicObject
+        #dim method As %String
+
+        While iter.%GetNext(.serviceLocation , .value ) {
+
+            Set %zCurrentData("ServiceLocation") = serviceLocation
+            
+            Set methodIter = value.%GetIterator()
+            While methodIter.%GetNext(.method , .serviceDefinition ) {
+                
+                continue:..#METHODLIST'[method
+
+                Set %zCurrentData("method") = method
+
+                $$$ThrowOnError(..ensResponseClass(serviceDefinition))          ; Generate Ens.Response class.
+                $$$ThrowOnError(..ensRequestClass(serviceDefinition, value))    ; Generate Ens.Request class.
+                $$$ThrowOnError(..httpClientOperationMethod(serviceDefinition)) ; Generate Operation method into HttpClient class.
+
+            }
+        
+        }
+        
+        Set:..compile sc = $system.OBJ.CompilePackage(..application, ..#CFLAGS)
+
+    } Catch(ex) {
+        Set sc = ex.AsStatus()
+    }
+
+    If $$$ISOK(sc) {
+        TCommit
+    } Else {
+        TROllback
+    }
+
+    Quit sc
+}
+
+Method validateSpec() As %Status
+{
+    #dim sc As %Status = $$$OK
+
+    If ..spec.swagger '= "2.0" {
+        Set sc = $$$ERROR(5001,$$$FormatText("Currently this tool support only swagger 2.0 (swagger reached: %1).", ..spec.swagger))
+    }
+
+    Quit sc
 }
 
 /// Check if a package exists on server ...
@@ -240,7 +314,8 @@ Method ensGenericResponse() As %Status [ Private ]
     }
 
     #dim cDef As %Dictionary.ClassDefinition = ##class(%Dictionary.ClassDefinition).%New(..ensGenericResponseClassName)
-    Set cDef.Super = "%Persistent,Ens.Response"
+    ;Set cDef.Super = "%Persistent,Ens.Response"
+    Set cDef.Super = ..ensGenericResponseSuper
     Set cDef.Inheritance = "left"
     Set cDef.ProcedureBlock = $$$YES
 
@@ -324,25 +399,7 @@ Method ensOperationClass() As %Status [ Private ]
     Set mDef.Name = "genericProcessResponse"
     Set mDef.FormalSpec = $$$FormatText("pRequest:%1,pResponse:%2,caller:%String,status:%Status,pHttpResponse:%Net.HttpResponse,parsedResponseClassName:%String", "Ens.Request", ..ensGenericResponseClassName)
     Set mDef.ReturnType = "%Status"
-
-    Do mDef.Implementation.WriteLine($Char(9) _"Set sc = $$$OK")
-    Do mDef.Implementation.WriteLine($Char(9) _"Set pResponse.operation = caller")
-    Do mDef.Implementation.WriteLine($Char(9) _"Set pResponse.operationStatusText = $SYSTEM.Status.GetOneErrorText(status)")
-    Do mDef.Implementation.WriteLine($Char(9) _"If $Isobject(pHttpResponse) {")
-    Do mDef.Implementation.WriteLine($Char(9,9) _"Set pResponse.httpStatusCode = pHttpResponse.StatusCode")
-    Do mDef.Implementation.WriteLine($Char(9,9) _"Do pResponse.body.CopyFrom(pHttpResponse.Data)")
-    Do mDef.Implementation.WriteLine($Char(9,9) _"Set key = """"")
-    Do mDef.Implementation.WriteLine($Char(9,9) _"For  {")
-    Do mDef.Implementation.WriteLine($Char(9,9,9) _"Set key = $Order(pHttpResponse.Headers(key),1 , headerValue)")
-    Do mDef.Implementation.WriteLine($Char(9,9,9) _"Quit:key=""""")
-    Do mDef.Implementation.WriteLine($Char(9,9,9) _"Do pResponse.headers.SetAt(headerValue, key)")
-    Do mDef.Implementation.WriteLine($Char(9,9) _"}")
-    
-    Do mDef.Implementation.WriteLine($Char(9,9) _"Set sc = ##class("_ ..utilsClassname _").processParsedResponse(pHttpResponse, parsedResponseClassName, caller, pRequest, pResponse)")
-
-    Do mDef.Implementation.WriteLine($Char(9) _"}")
-    Do mDef.Implementation.WriteLine($Char(9) _"Return sc")
-    
+    Do ..genericResponseImpl(mDef) 
     Do cDef.Methods.Insert(mDef)
 
     Set mDef = ##class(%Dictionary.MethodDefinition).%New()
@@ -358,6 +415,88 @@ Method ensOperationClass() As %Status [ Private ]
     Set sc = cDef.%Save()
 
 	Return sc
+}
+
+/// Http client class<br/>
+/// 
+Method httpClientClass() As %Status [ Private ]
+{
+    #dim sc As %Status = $$$OK
+    
+    If $$$defClassDefined(..httpClientClassName) {
+        
+        If ..overwriteIfExist {
+            
+            $$$QuitOnError($$Delete^%apiOBJ(..httpClientClassName,"-d"))
+
+        } Else {
+            Write:..debug !,..httpClientClassName, " already exists, class skipped"
+            Quit $$$OK
+        }
+    }
+
+    #dim cDef As %Dictionary.ClassDefinition = ##class(%Dictionary.ClassDefinition).%New(..httpClientClassName)
+    Set cDef.Super = "%RegisteredObject"
+    Set cDef.ProcedureBlock = $$$YES
+
+    Set mDef = ##class(%Dictionary.MethodDefinition).%New()
+    Set mDef.Name = "genericProcessResponse"
+    Set mDef.FormalSpec = $$$FormatText("pRequest:%1,pResponse:%2,caller:%String,status:%Status,pHttpResponse:%Net.HttpResponse,parsedResponseClassName:%String", "%RegisteredObject", ..ensGenericResponseClassName)
+    Set mDef.ReturnType = "%Status"
+    Set bck = ..utilsClassname
+    Set ..utilsClassname = ..httpClientClassName
+    Do ..genericResponseImpl( mDef) 
+    Set ..utilsClassname = bck
+    Do cDef.Methods.Insert(mDef)
+
+    Set mDef = ##class(%Dictionary.MethodDefinition).%New()
+    Set mDef.Name = "GetRequest"
+    Set mDef.FormalSpec = $$$FormatText("pRequest:%1","%RegisteredObject")
+    Set mDef.ReturnType = "%Net.HttpRequest"
+
+    Do mDef.Implementation.WriteLine($Char(9) _"#dim pHttpRequestIn As %Net.HttpRequest = ##class(%Net.HttpRequest).%New()")
+    Do mDef.Implementation.WriteLine($Char(9) _"Do:##class(%Dictionary.CompiledProperty).%ExistsId(pRequest.%ClassName(1)_""||accept"") pHttpRequestIn.SetHeader(""accept"", pRequest.accept)")
+    Do mDef.Implementation.WriteLine($Char(9) _$$$FormatText("Set pHttpRequestIn.Server = ""%1""", $Piece(..spec.host, ":",1) ))
+    Do mDef.Implementation.WriteLine($Char(9) _$$$FormatText("Set pHttpRequestIn.Port = ""%1""", $Piece(..spec.host, ":",2) ))
+    Do:$Isobject(..spec.schemes)&&(..spec.schemes.%ToJSON()["https") mDef.Implementation.WriteLine($Char(9) _"Set pHttpRequestIn.Https = 1")
+    Do mDef.Implementation.WriteLine($Char(9) _$$$FormatText("Set:pHttpRequestIn.Https pHttpRequestIn.SSLConfiguration = ""%1""", "default" ))
+    
+    Do mDef.Implementation.WriteLine($Char(9) _"Return pHttpRequestIn")
+    Do cDef.Methods.Insert(mDef)
+
+
+    Set mDef = ##class(%Dictionary.MethodDefinition).%New()
+    Set mDef.Name = "processParsedResponse"
+    Set mDef.FormalSpec = "pHttpResponse:%Net.HttpResponse,responseClass:%String,caller:%String,pRequest:%RegisteredObject,pResponse:"_..ensGenericResponseClassName
+    Set originalMethod = ##class(%Dictionary.MethodDefinition).%OpenId("dc.openapi.client.Utils||processParsedResponse")
+    Do mDef.Implementation.CopyFrom( originalMethod.Implementation )
+    Set mDef.ReturnType = "%Status"
+    Set mDef.ClassMethod = $$$YES
+    Do cDef.Methods.Insert(mDef)
+    
+    Set sc = cDef.%Save()
+
+	Return sc
+}
+
+Method genericResponseImpl(mDef As %Dictionary.MethodDefinition) As %Status
+{
+    Do mDef.Implementation.WriteLine($Char(9) _"Set sc = $$$OK")
+    Do mDef.Implementation.WriteLine($Char(9) _"Set pResponse.operation = caller")
+    Do mDef.Implementation.WriteLine($Char(9) _"Set pResponse.operationStatusText = $SYSTEM.Status.GetOneErrorText(status)")
+    Do mDef.Implementation.WriteLine($Char(9) _"If $Isobject(pHttpResponse) {")
+    Do mDef.Implementation.WriteLine($Char(9,9) _"Set pResponse.httpStatusCode = pHttpResponse.StatusCode")
+    Do mDef.Implementation.WriteLine($Char(9,9) _"Do pResponse.body.CopyFrom(pHttpResponse.Data)")
+    Do mDef.Implementation.WriteLine($Char(9,9) _"Set key = """"")
+    Do mDef.Implementation.WriteLine($Char(9,9) _"For  {")
+    Do mDef.Implementation.WriteLine($Char(9,9,9) _"Set key = $Order(pHttpResponse.Headers(key),1 , headerValue)")
+    Do mDef.Implementation.WriteLine($Char(9,9,9) _"Quit:key=""""")
+    Do mDef.Implementation.WriteLine($Char(9,9,9) _"Do pResponse.headers.SetAt(headerValue, key)")
+    Do mDef.Implementation.WriteLine($Char(9,9) _"}")
+    Do mDef.Implementation.WriteLine($Char(9,9) _"Set sc = ##class("_ ..utilsClassname _").processParsedResponse(pHttpResponse, parsedResponseClassName, caller, pRequest, pResponse)")
+    Do mDef.Implementation.WriteLine($Char(9) _"}")
+    Do mDef.Implementation.WriteLine($Char(9) _"Return sc")
+    Quit $$$OK
 }
 
 /// Generate class for Proxy service<br/>
@@ -614,7 +753,9 @@ Method ensRequestClass(serviceDefinition As %Library.DynamicObject, value As %Li
                             _ "Service : "_serviceDefinition.operationId
 
     
-    Set cDef.Super = "%Persistent,Ens.Request"
+    ;Set cDef.Super = "%Persistent,Ens.Request"
+    Set cDef.Super = ..ensRequestSuper
+    
     Set cDef.Inheritance = "left"
     
     
@@ -806,6 +947,20 @@ Method ensServiceClass(serviceDefinition As %Library.DynamicObject) As %Status [
 /// Generate operation method into Business Operation class<br/>
 Method ensOperationMethod(serviceDefinition As %Library.DynamicObject) As %Status [ Private ]
 {
+    #dim cDef As %Dictionary.ClassDefinition = ##class(%Dictionary.ClassDefinition).%OpenId(..ensOperationClassName,,.sc)
+    Quit:$$$ISERR(sc) sc
+    Quit ..addOperationMethod( serviceDefinition , cDef )
+}
+
+Method httpClientOperationMethod(serviceDefinition As %Library.DynamicObject) As %Status [ Private ]
+{
+    #dim cDef As %Dictionary.ClassDefinition = ##class(%Dictionary.ClassDefinition).%OpenId(..httpClientClassName,,.sc)
+    Quit:$$$ISERR(sc) sc
+    Quit ..addOperationMethod( serviceDefinition , cDef )
+}
+
+Method addOperationMethod(serviceDefinition As %Library.DynamicObject, cDef As %Dictionary.ClassDefinition) As %Status [ Private ]
+{
     #dim sc As %Status = $$$OK
     #dim methodName As %String = $Zcvt(%zCurrentData("method"),"U") _ ..name(serviceDefinition.operationId)
     
@@ -818,14 +973,14 @@ Method ensOperationMethod(serviceDefinition As %Library.DynamicObject) As %Statu
         Return $$$OK
     }
     
-    #dim cDef As %Dictionary.ClassDefinition = ##class(%Dictionary.ClassDefinition).%OpenId(..ensOperationClassName,,.sc)
-    Quit:$$$ISERR(sc) sc
-
-    
     #dim mDef As %Dictionary.MethodDefinition = ##class(%Dictionary.MethodDefinition).%New()
     Set mDef.Name = methodName
     Set mDef.Description = $Replace(serviceDefinition.description, $$$NL, "<br/>"_$$$NL)
-    Set mDef.FormalSpec = $$$FormatText("pRequest:%1,pResponse:%2", ensRequestClassName, ..ensGenericResponseClassName)
+    If cDef.Super [ "Ens.BusinessOperation" {
+        Set mDef.FormalSpec = $$$FormatText("pRequest:%1,pResponse:%2", ensRequestClassName, ..ensGenericResponseClassName)
+    } Else {
+        Set mDef.FormalSpec = $$$FormatText("pRequest:%1,pResponse:%2,pHttpRequestIn:%Net.HttpRequest=..GetRequest(),*pHttpResponse:%Net.HttpResponse", ensRequestClassName, ..ensGenericResponseClassName)
+    }
     Set mDef.ReturnType = "%Status"
     
     
@@ -923,7 +1078,12 @@ Method ensOperationMethod(serviceDefinition As %Library.DynamicObject) As %Statu
         Do mDef.Implementation.WriteLine($Char(9) _"}")
     }
 
-    Do mDef.Implementation.WriteLine($Char(9) _ "$$$QuitOnError(..Adapter.SendFormDataArray(.pHttpResponse, """_ %zCurrentData("method") _""", pHttpRequestIn , , , pURL))")
+    If cDef.Super [ "Ens.BusinessOperation" {
+        Do mDef.Implementation.WriteLine($Char(9) _ "$$$QuitOnError(..Adapter.SendFormDataArray(.pHttpResponse, """_ %zCurrentData("method") _""", pHttpRequestIn , , , pURL))")
+    } Else {
+        Do mDef.Implementation.WriteLine($Char(9) _ $$$FormatText("$$$QuitOnError(pHttpRequestIn.Send(""%1"", pURL))", $Zcvt(%zCurrentData("method"), "U") ))
+        Do mDef.Implementation.WriteLine($Char(9) _ "Set pHttpResponse=pHttpRequestIn.HttpResponse")
+    }
     Do mDef.Implementation.WriteLine($Char(9) _ $$$FormatText("Set pResponse = ##class(%1).%New()", ..ensGenericResponseClassName))
     
     Do mDef.Implementation.WriteLine($Char(9) _ "Set sc = ..genericProcessResponse(pRequest, pResponse, """_methodName_""", sc, $Get(pHttpResponse),"""_$Get(..tmp("ensResponse", serviceDefinition.operationId))_""")")

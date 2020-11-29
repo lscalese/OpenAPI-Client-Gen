@@ -13,7 +13,7 @@ XData OpenAPI [ MimeType = application/json ]
 /// spec is the open api 2.0 specification in JSON Format<br/>
 /// It could be a stream, a dynamic object or an URL.<br/>
 /// ex: Set sc = ##class(dc.openapi.client.Spec).generateApp("petstore", "https://petstore.swagger.io:443/v2/swagger.json")
-ClassMethod generateApp(appName As %String, spec) As %Status
+ClassMethod generateApp(appName As %String, spec, features As %Binary) As %Status
 {
     Set sc = $$$OK
     Try {
@@ -57,7 +57,7 @@ ClassMethod generateApp(appName As %String, spec) As %Status
 
    
 
-    Return ..%CreateClientApplication(appName, spec)
+    Return ..%CreateClientApplication(appName, spec, .features)
 }
 
 ClassMethod loadSpecFromFile(file As %String) As %DynamicObject
@@ -180,7 +180,7 @@ ClassMethod %CreateClientApplication(applicationName As %String, swagger As %Dyn
         $$$ThrowOnError(cDef.%Save())
         $$$ThrowOnError($system.OBJ.Compile(specClass,"ck-d"))
         
-        Set generator = ##class(dc.openapi.client.Generator).%New(swagger, applicationName, $Get(features("compile"),$$$YES))
+        Set generator = ##class(dc.openapi.client.Generator).%New(swagger, applicationName, $Get(features("compile"),$$$YES), $Get(features("simpleHttpClientOnly"),$$$NO))
         Set sc = generator.generate()
 
     } Catch (ex) {

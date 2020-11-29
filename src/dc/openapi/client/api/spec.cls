@@ -44,6 +44,13 @@ XData OpenAPI [ MimeType = application/json ]
             "description":"package name for your application.",
             "required":true,
             "type":"string"
+          },
+          {
+            "name":"simpleHttpClient",
+            "in":"query",
+            "description":"If set to 1, the generated code won't a production but a simple http client without Interoperability architecture.",
+            "required":false,
+            "type":"string"
           }
         ],
         "responses":{
