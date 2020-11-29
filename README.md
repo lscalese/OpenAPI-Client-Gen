@@ -1,6 +1,6 @@
 ## OPENAPI Client Gen
 
-This is an application to generate an Iris interoperability production from a Swagger 2.0 specification document.  
+This is an application to generate a [simple REST Http client](#Simple-Http-Client-Sample) or an [Iris interoperability production](#Production-Sample) from a Swagger 2.0 specification document.  
 Instead of existing tools, this application generates client production.
 
 It could be used as tool to create production on your local instance or to be hosted.  
@@ -8,7 +8,15 @@ If this application is hosted, a REST api is available to upload the specificati
 
 All generated classes are ABSOLUTELY NOT linked in any way with the generator.  
 Feel free to edit anything to adapt it with your need.  
-Consider the generated Production client as a template ready to use.  
+Consider the generated Production\classes client as a template ready to use.  
+&nbsp;
+## Table of contents  
+&nbsp;
+1. [Production Sample](#Production-Sample)  
+2. [Simple Http Client Sample](#Simple-Http-Client-Sample)  
+3. [Installation: ZPM](#Installation:-ZPM)
+4. [Installation: Docker](#Installation:-Docker)  
+&nbsp;
   
 ## Production Sample
 
@@ -275,10 +283,39 @@ In short :
 * petshop.bo.Operation create an http request related to the received Ens.Request instance and fill a petshop.GenericResponse.  
 * petshop.bp.Process receive the response.  
 
+## Simple Http Client Sample
 
+### Generate client application
+
+```
+Set features("simpleHttpClientOnly") = 1
+Set sc = ##class(dc.openapi.client.Spec).generateApp("petshopclient", "https://petstore.swagger.io/v2/swagger.json", .features)
+```
+<!--
+### Test client
+
+Create pet  
+
+```
+Set pet = {"category":{"id":0,"name":"string"},"id":456789,"name":"Kitty_Galore","photoUrls":["string"],"tags":[{"id":0,"name":"string"}],"status":"available"}
+Set requestObject = ##class().%New()
+Do requestObject.pet.%JSONImport(pet) 
+Set httpClient = ##class(petshopclient.HttpClient).%New()
+Set sc = httpClient.POSTaddPet(requestObject, .responseObject, , .httpResponse )
+
+Write !, "Http status : ", responseObject.httpStatusCode
+Write !, "Response Body : ", !,responseObject.body.Read()
+
+```
+
+Get created pet  
+
+```
+```
+-->
 ## Code snippet
 
-### Generate classes on local machine
+### Generate production on local machine
 
 By URL
 ```
@@ -293,6 +330,13 @@ By DynamicObject
 ```
 Set spec = {} ; Set your specficiation here
 Set sc = ##class(dc.openapi.client.Spec).generateApp("petshop", spec)
+```
+
+### Generate simple Http Client (without Interoperability architecture)
+
+```
+Set features("simpleHttpClientOnly") = 1
+Set sc = ##class(dc.openapi.client.Spec).generateApp("simpleclient", "https://petstore.swagger.io/v2/swagger.json", .features)
 ```
 
 ### Generate classes for export code purpose only
@@ -332,6 +376,7 @@ Open Terminal and call:
 ```
 zpm "install openapi-client-gen"
 zpm "install objectscript-openapi-definition"
+zpm "install sslclient"
 ```
 
 Optional swagger-ui: 
