@@ -14,8 +14,8 @@ Consider the generated Production\classes client as a template ready to use.
 &nbsp;
 1. [Production Sample](#Production-Sample)  
 2. [Simple Http Client Sample](#Simple-Http-Client-Sample)  
-3. [Installation: ZPM](#Installation:-ZPM)
-4. [Installation: Docker](#Installation:-Docker)  
+3. [Installation ZPM](#Installation-ZPM)
+4. [Installation Docker](#Installation-Docker)  
 &nbsp;
   
 ## Production Sample
@@ -412,7 +412,7 @@ Or use the basic embedded form at : http://localhost:52795/csp/swaggerclientgen/
 ## Prerequisites
 Make sure you have [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) and [Docker desktop](https://www.docker.com/products/docker-desktop) installed.
 
-## Installation: ZPM
+## Installation ZPM
 
 Open IRIS Namespace with Interoperability Enabled.
 Open Terminal and call:
@@ -427,7 +427,7 @@ Optional swagger-ui:
 zpm "install swagger-ui"
 ```
 
-## Installation: Docker
+## Installation Docker
 Clone/git pull the repo into any local directory
 
 ```
