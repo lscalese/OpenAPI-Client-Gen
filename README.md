@@ -1,6 +1,6 @@
 ## OPENAPI Client Gen
 
-This is an application to generate a [simple REST Http client](#Simple-Http-Client-Sample) or an [Iris interoperability production](#Production-Sample) from a Swagger 2.0 specification document.  
+This is an application to generate a [simple REST Http client](#Simple-Http-Client-Sample) or an [Iris interoperability production](#Production-Sample) client from a Swagger 2.0 specification document.  
 Instead of existing tools, this application generates client production.
 
 It could be used as tool to create production on your local instance or to be hosted.  
