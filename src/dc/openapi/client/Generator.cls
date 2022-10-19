@@ -116,7 +116,7 @@ Method %OnNew(spec As %Library.DynamicObject, application As %String, compile As
 
 ClassMethod name(name As %String) As %String [ CodeMode = expression ]
 {
-$Translate(name, "$_-","")
+$Translate(name, "$_","")
 }
 
 Method generate() As %Status
@@ -988,7 +988,7 @@ Method addOperationMethod(serviceDefinition As %Library.DynamicObject, cDef As %
     Set pList = $lfs(..tmp("ensRequest", ensRequestClassName, "REQUESTPARAMLOCATION"),","), ptr = 0
     Set mParts = $$$NO
     
-    Do mDef.Implementation.WriteLine($Char(9) _ "Set pHttpRequestIn = ..GetRequest(pRequest)")
+    Do mDef.Implementation.WriteLine($Char(9) _ "Set:'$ISOBJECT($Get(pHttpRequestIn)) pHttpRequestIn = ..GetRequest(pRequest)")
     Do mDef.Implementation.WriteLine($Char(9) _ "Set pHttpRequestIn.ContentType = pRequest.consume")
 
     While $Listnext(pList, ptr, propertyInfo) {
@@ -1107,7 +1107,7 @@ Method restProxyMethod(serviceDefinition As %Library.DynamicObject) As %Status [
     Set cDef.ProcedureBlock = $$$YES
 
     Set methodName = $Zcvt(%zCurrentData("method"),"U") _ ..name(serviceDefinition.operationId)
-    ;w !,"methodName", methodName
+
     If ##class(%Dictionary.MethodDefinition).%ExistsId(..restClassName_"||"_methodName) {
         Return sc
     }
@@ -1149,9 +1149,8 @@ Method restProxyMethod(serviceDefinition As %Library.DynamicObject) As %Status [
         } ElseIf in = "path" {
 
             Set line = "Set ensRequest.%1 = %2"
-            Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText(line, propertyName, ..name(parameterName)))
-            Set mDef.FormalSpec = mDef.FormalSpec_","_..name(parameterName)_":%String"
-            ;write !,$c(9), "formal spec ",mDef.FormalSpec, "  --  ",propertyName
+            Do mDef.Implementation.WriteLine($Char(9)_$$$FormatText(line, propertyName, parameterName))
+            Set mDef.FormalSpec = mDef.FormalSpec_","_parameterName_":%String"
 
         } ElseIf (in = "header") &&(parameterName'="accept") {    
 
@@ -1221,6 +1220,7 @@ Method restProxyMethod(serviceDefinition As %Library.DynamicObject) As %Status [
     Do mDef.Implementation.WriteLine($Char(9)_"Do pResponse.body.OutputToDevice()")
     Do mDef.Implementation.WriteLine($Char(9)_"Return $$$OK")
     
+
     Do cDef.Methods.Insert(mDef)
 
     Return cDef.%Save()
