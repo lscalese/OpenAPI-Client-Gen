@@ -987,8 +987,9 @@ Method addOperationMethod(serviceDefinition As %Library.DynamicObject, cDef As %
     Do mDef.Implementation.WriteLine($Char(9) _"Set sc = $$$OK, pURL = """ _ ..spec.basePath _ %zCurrentData("ServiceLocation") _"""")
     Set pList = $lfs(..tmp("ensRequest", ensRequestClassName, "REQUESTPARAMLOCATION"),","), ptr = 0
     Set mParts = $$$NO
-    
-    Do mDef.Implementation.WriteLine($Char(9) _ "Set:'$ISOBJECT($Get(pHttpRequestIn)) pHttpRequestIn = ..GetRequest(pRequest)")
+    If cDef.Super [ "Ens.BusinessOperation" {
+        Do mDef.Implementation.WriteLine($Char(9) _ "Set pHttpRequestIn = ..GetRequest(pRequest)")
+    }
     Do mDef.Implementation.WriteLine($Char(9) _ "Set pHttpRequestIn.ContentType = pRequest.consume")
 
     While $Listnext(pList, ptr, propertyInfo) {
