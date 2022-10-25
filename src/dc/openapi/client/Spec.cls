@@ -32,7 +32,7 @@ ClassMethod generateApp(appName As %String, spec, features As %Binary) As %Statu
             }
         } Else {
             If $ZCONVERT($Extract(spec, 1, 4), "l") = "http" {
-                Set spec = ..loadSpecFromUrl(spec)
+                Set spec = ..loadSpecFromUrl(spec,.features)
             } ElseIf ##class(%File).Exists(spec) {
                 Set spec = ..loadSpecFromFile(spec)
             } Else {
@@ -78,13 +78,16 @@ ClassMethod loadSpecFromFile(file As %String) As %DynamicObject
     Return spec
 }
 
-ClassMethod loadSpecFromUrl(url As %String) As %DynamicObject
+ClassMethod loadSpecFromUrl(url As %String, ByRef features As %Binary) As %DynamicObject
 {
     Set request = ##class(%Net.HttpRequest).%New()
     Set request.Server = $Piece($Piece(url,"/",3),":",1)
     Set request.Port = $Piece($Piece(url,"/",3),":",2)
     Set protocol = $Zcvt($Piece(url,":",1),"l")
     Set request.Https = (protocol="https")
+
+    Set:$Get(features("Username"))'="" request.Username = features("Username")
+    Set:$Get(features("Password"))'="" request.Password = features("Password")
     
     If request.Https {
         Set request.SSLConfiguration = "default"

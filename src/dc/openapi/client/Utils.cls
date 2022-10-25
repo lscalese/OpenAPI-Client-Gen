@@ -97,7 +97,7 @@ ClassMethod processParsedResponse(pHttpResponse As %Net.HttpResponse, responseCl
     Return:responseClass="" $$$OK
     Set parsedResponse = "", sc = $$$OK
     
-    If (pHttpResponse.ContentType="application/json") {
+    If (pHttpResponse.ContentType["application/json") {
         Set httpStatusCode = pHttpResponse.StatusCode
         
         Set parsedResponse = $ClassMethod(responseClass, "%New")
