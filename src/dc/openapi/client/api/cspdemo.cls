@@ -17,7 +17,7 @@ ClassMethod OnPage() As %Status
         </head>
         <body onload="">
             <nav class="navbar navbar-dark bg-dark">
-                <span class="navbar-brand mb-0 h1">IRIS Production Generator (1.4.0)</span>
+                <span class="navbar-brand mb-0 h1">IRIS Production Generator (2.0.0)</span>
                 <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
                     <li class="nav-item active">
                     <a class="nav-link" href="https://github.com/lscalese/OpenAPI-Client-Gen">Github</a>
@@ -31,14 +31,15 @@ ClassMethod OnPage() As %Status
                 <div class="form-group">
                     &nbsp;<br/>
                     <label for="appName">Application package name</label>
-                    <input type="text" class="form-control" id="appName"  placeholder="petshop">
+                    <input type="text" class="form-control" id="appName"  placeholder="petshop" value="petshop#($Increment(^webGenCount))#">
                 </div>
                
                
                 <div class="form-group">
                     &nbsp;<br/>
-                    <label for="spec">Swagger 2.0 specification</label>
-                    <textarea class="form-control" id="spec" rows="20" placeholder="copy/paste your swagger 2.0 specification in json format or the specification URL."></textarea>
+                    <label for="spec">OpenAPI specification (copy\paste your specification in JSON\YAML or the URL)</label>
+                    <label for="spec">Version 1.x or 2. are automatically converted to Version 3 before processing.</label>
+                    <textarea class="form-control" id="spec" rows="20" placeholder="copy/paste your OpenAPI specification in json format or the specification URL.">https://petstore3.swagger.io/api/v3/openapi.json</textarea>
                 </div>
 
                  <button type="button" class="btn btn-dark" onclick="generate(0);">Generate Interoperability Production</button>

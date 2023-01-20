@@ -3,8 +3,8 @@
   <Document name="openapi-client-gen.ZPM">
     <Module>
       <Name>openapi-client-gen</Name>
-      <Description>IRIS Interoperability Production generator from Swagger 2.0 specification.</Description>
-      <Version>1.4.4</Version>
+      <Description>IRIS Interoperability Production generator from OpenAPI specification.</Description>
+      <Version>2.0.0</Version>
       <Packaging>module</Packaging>
       <Dependencies>
         <ModuleReference>
@@ -13,11 +13,19 @@
         </ModuleReference>
         <ModuleReference>
           <Name>objectscript-openapi-definition</Name>
-          <Version>1.1.5</Version>
+          <Version>1.3.0</Version>
         </ModuleReference>
         <ModuleReference>
           <Name>yaml-utils</Name>
           <Version>0.1.1</Version>
+        </ModuleReference>
+        <ModuleReference>
+          <Name>swagger-converter-cli</Name>
+          <Version>0.0.2</Version>
+        </ModuleReference>
+        <ModuleReference>
+          <Name>swagger-validator-cli</Name>
+          <Version>0.0.1</Version>
         </ModuleReference>
       </Dependencies>
       <SourcesRoot>src</SourcesRoot>

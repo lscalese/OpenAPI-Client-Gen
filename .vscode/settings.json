@@ -5,6 +5,7 @@
       "iris.script": "objectscript"
     },
   "objectscript.conn" :{
+    "active": true,
     "ns": "IRISAPP",
     "username": "_SYSTEM",
     "password": "SYS",
@@ -12,55 +13,12 @@
       "service": "iris",
       "internalPort": 52773
     },
-    "active": true,
     "links": {
-      "Production": "http://localhost:${port}/csp/irisapp/EnsPortal.ProductionConfig.zen?PRODUCTION=dc.Demo.Production",
-      "Rule": "http://localhost:${port}/csp/irisapp/EnsPortal.RuleEditor.zen?RULE=dc.Demo.FilterPostsRoutingRule"
-    },
-    "server": "default~iris"
-  },
-  "sqltools.connections": [
-    {
-      "namespace": "IRISAPP",
-      "connectionMethod": "Server and Port",
-      "showSystem": false,
-      "previewLimit": 50,
-      "server": "localhost",
-      "port": 52795,
-      "askForPassword": false,
-      "driver": "InterSystems IRIS",
-      "name": "IRISAPP",
-      "username": "_SYSTEM",
-      "password": "SYS"
+      "Generator Demo": "${serverUrl}/csp/swaggerclientgen/dc.openapi.client.api.cspdemo.cls?",
+      "UnitTest_Portal": "${serverUrl}/csp/sys/%25UnitTest.Portal.Home.cls?$NAMESPACE=IRISAPP",
+      "Production": "http://localhost:${port}/csp/irisapp/EnsPortal.ProductionConfig.zen?PRODUCTION=petshop.Production"
     }
-  ],
-  "intersystems.servers": {
-
-    "default~iris": {
-      "webServer": {
-        "scheme": "http",
-        "host": "127.0.0.1",
-        "port": 52795
-      },
-      "description": "Connection to local InterSystems IRIS™ installed with default settings."
-    },
-    "default~cache": {
-      "webServer": {
-        "scheme": "http",
-        "host": "127.0.0.1",
-        "port": 57772
-      },
-      "description": "Connection to local InterSystems Caché installed with default settings."
-    },
-    "default~ensemble": {
-      "webServer": {
-        "scheme": "http",
-        "host": "127.0.0.1",
-        "port": 57772
-      },
-      "description": "Connection to local InterSystems Ensemble installed with default settings."
-    },
-    "/default": "default~iris"
-  }
-
+  },
+  "workbench.colorTheme": "InterSystems Default Dark",
+  "objectscript.serverSideEditing": true
 }

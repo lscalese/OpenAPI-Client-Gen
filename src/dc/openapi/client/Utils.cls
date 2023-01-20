@@ -166,4 +166,22 @@ ClassMethod getSwaggerSpec(className As %String, xDataName As %String, webapp As
     Quit swagger
 }
 
+ClassMethod log(msg As %String, nl As %Boolean = {$$$YES}, dtOnNL As %Boolean = {$$$YES})
+{
+    Quit:$Get(%zverbose)=0
+
+    Write:nl !
+    Write:nl&&dtOnNL $ZDateTime($Horolog, 3, 1), " "
+    Write msg
+
+    Quit
+}
+
+ClassMethod CreateSSLConfig(name As %String = "DefaultSSL")
+{
+    New $namespace
+    set $namespace="%SYS", name="DefaultSSL" do:'##class(Security.SSLConfigs).Exists(name) ##class(Security.SSLConfigs).Create(name)
+    Quit
+}
+
 }

@@ -1,61 +1,34 @@
- do $SYSTEM.OBJ.Load("/opt/irisapp/Installer.cls", "ck")
- set sc = ##class(App.Installer).setup() 
+    zn "%SYS"
+    Do ##class(Security.Users).UnExpireUserPasswords("*")
 
- zn "IRISAPP"
- do $System.OBJ.LoadDir("/opt/irisapp/src","ck",,1)
- zpm "install sslclient"
- zpm "install objectscript-openapi-definition"
- zpm "install yaml-utils"
- zpm "install swagger-ui"
- 
- zn "%SYS"
- Do ##class(Security.Users).UnExpireUserPasswords("*")
+    ; enabling callin for Embedded Python
+    do ##class(Security.Services).Get("%Service_CallIn",.prop)
+    set prop("Enabled")=1
+    set prop("AutheEnabled")=48
+    do ##class(Security.Services).Modify("%Service_CallIn",.prop)
 
- ; create web application...
+    // create IRISAPP namespace
+    do $SYSTEM.OBJ.Load("/home/irisowner/irisdev/Installer.cls", "ck") 
+    set sc = ##class(App.Installer).setup() 
 
- write "Create web application ...",!
- set webName = "/swaggerclientgen/api"
- set webProperties("NameSpace") = "IRISAPP"
- set webProperties("Enabled") = 1
- set webProperties("CSPZENEnabled") = 1
- set webProperties("AutheEnabled") = 64
- set webProperties("iKnowEnabled") = 1
- set webProperties("DeepSeeEnabled") = 1
- Set webProperties("DispatchClass")="dc.openapi.client.api.disp"
- Set webProperties("MatchRoles")=":%DB_IRISAPP"
- set sc = ##class(Security.Applications).Create(webName, .webProperties)
- write "Web application "_webName_" has been created!",! 
+    zn "IRISAPP"
 
-  ; create web application...
+    zpm "load /home/irisowner/irisdev/ -v":1:1
 
- write "Create web application ...",!
- Kill webProperties
- set webName = "/csp/swaggerclientgen"
- set webProperties("CookiePath") = "/csp/swaggerclientgen/"
- set webProperties("NameSpace") = "IRISAPP"
- set webProperties("Enabled") = 1
- set webProperties("CSPZENEnabled") = 1
- set webProperties("AutheEnabled") = 64
- set webProperties("iKnowEnabled") = 1
- set webProperties("DeepSeeEnabled") = 1
- Set webProperties("MatchRoles")=":%DB_IRISAPP"
- set sc = ##class(Security.Applications).Create(webName, .webProperties)
- write "Web application "_webName_" has been created!",! 
+    ; fix swagger-ui cookie path
+    ; kill webProperties
+    ; set sc = ##class(Security.Applications).Get("/swagger-ui",.webProperties)
+    ; set webProperties("CookiePath")="/swagger-ui/"
+    ; set sc = ##class(Security.Applications).Modify("/swagger-ui",.webProperties)
 
- ; fix swagger-ui cookie path
- kill webProperties
- set sc = ##class(Security.Applications).Get("/swagger-ui",.webProperties)
- set webProperties("CookiePath")="/swagger-ui/"
- set sc = ##class(Security.Applications).Modify("/swagger-ui",.webProperties)
-
- ; Lockdown
- ;zpm "install isc-apptools-lockdown"
- ;set tSC= ##class(App.Security.LockDown).CreateUser("contest", "%DB_IRISAPP", "Contest2004", "irisapp user","IRISAPP")
- ;set tSC= ##class(App.Security.LockDown).Apply(.....)
- ;set prop("AutheEnabled")=32
- ;set tSC=##class(Security.Applications).Modify("/swaggerclientgen/api",.prop)
- ;Do ##class(Security.Users).Get("_SYSTEM",.p)
- ;Set p("Enabled")=1
- ;Do ##class(Security.Users).Modify("_SYSTEM",.p)
- 
-halt
+    ; Lockdown
+    ;zpm "install isc-apptools-lockdown"
+    ;set tSC= ##class(App.Security.LockDown).CreateUser("contest", "%DB_IRISAPP", "contest2301", "irisapp user","IRISAPP")
+    ;set tSC= ##class(App.Security.LockDown).Apply(.....)
+    ;set prop("AutheEnabled")=32
+    ;set tSC=##class(Security.Applications).Modify("/swaggerclientgen/api",.prop)
+    ;Do ##class(Security.Users).Get("_SYSTEM",.p)
+    ;Set p("Enabled")=1
+    ;Do ##class(Security.Users).Modify("_SYSTEM",.p)
+    
+    halt

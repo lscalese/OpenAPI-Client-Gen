@@ -27,7 +27,7 @@ ClassMethod InteropClasses(body As %Stream.Object, appName As %String, simpleHtt
         TSTART
         Try {
             
-            If ##class(dc.openapi.client.Generator).packageExists(appName) {
+            If ##class(dc.openapi.client.Spec).packageExists(appName) {
                 ; existing package security
                 $$$ThrowStatus($$$ERROR(5001, $$$FormatText("Package name %1 exists, please choose an other package name", appName)))
             }

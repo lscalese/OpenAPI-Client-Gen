@@ -15,8 +15,6 @@ Method TestGenerateProduction() As %Status
     #dim base As %String = ..GetBaseTestDir(.separator) _ "files" _ separator
 
     Set app("zzzpetshop") = base _ "petshop.json"
-    ;Set app("zzzdocconverter") = base _ "zdoc.json"
-    
     Set appName = ""
     
     For  {
@@ -54,129 +52,12 @@ Method TestSwaggerModel() As %Status
     Set classExists( appName _ ".bo.Operation") = ""
     Set classExists( appName _ ".bp.Process") = ""
     Set classExists( appName _ ".bp.SyncProcess") = ""
-    Set classExists( appName _ ".rest.Projection") = ""
-    Set classExists( appName _ ".rest.REST") = ""
     Set classExists( appName _ ".bs.ProxyService") = ""
 
-    Set classExists( appName _ ".msg.GenericResponse") = ""
-    Set classExists( appName _ ".msg.ParsedResponse" ) = ""
+    Set classExists( appName _ ".responses.GenericResponse") = ""
     
     Set classExists( appName _ ".model.spec" ) = ""
-    Set classExists( appName _ ".model.Definition.nestedobject" ) = ""
-    Set classExists( appName _ ".model.Definition.object1" ) = ""
-    Set classExists( appName _ ".model.Definition.nestedSchemaAnonymous") = ""
 
-    
-
-    ; POST /nestedobject  
-    Set classExists( appName _ ".msg.postnestedobjectRequest" ) = ""
-
-    Set propertyCheck( appName _ ".msg.postnestedobjectRequest", "accept", "Type" ) = "%String"
-    Set propertyCheck( appName _ ".msg.postnestedobjectRequest", "consume", "Type" ) = "%String"
-    Set propertyCheck( appName _ ".msg.postnestedobjectRequest", "bodynestedobject", "Type" ) = appName _ ".model.Definition.nestedobject"    
-
-    
-
-    ; model.Definition.nestedobject check;
-    Set propertyCheck( appName _ ".model.Definition.nestedobject", "listInteger", "Type" ) = "%Integer"
-    Set propertyCheck( appName _ ".model.Definition.nestedobject", "listInteger", "Collection" ) = "list"
-    Set propertyCheck( appName _ ".model.Definition.nestedobject", "listObject1", "Type" ) = "object1"
-    Set propertyCheck( appName _ ".model.Definition.nestedobject", "listObject1", "Collection" ) = "list"
-    Set propertyCheck( appName _ ".model.Definition.nestedobject", "nestedSchema", "Type" ) = "nestedSchemaAnonymous"
-    Set propertyCheck( appName _ ".model.Definition.nestedobject", "simpleObject1", "Type" ) = "object1"
-    Set propertyCheck( appName _ ".model.Definition.nestedobject", "simpleString", "Type" ) = "%String"
-    
-    ; model.Definition.object1 check
-    Set propertyCheck( appName _ ".model.Definition.object1", "property", "Type" ) = "%Integer"
-   
-    ; nestedSchemaAnonymous check
-    Set propertyCheck( appName _ ".model.Definition.nestedSchemaAnonymous", "ListSchemaObject1", "Type" ) = "object1"
-    Set propertyCheck( appName _ ".model.Definition.nestedSchemaAnonymous", "ListSchemaObject1", "Collection" ) = "list"
-    Set propertyCheck( appName _ ".model.Definition.nestedSchemaAnonymous", "ListSimpleString", "Type" ) = "%String"
-    Set propertyCheck( appName _ ".model.Definition.nestedSchemaAnonymous", "ListSimpleString", "Collection" ) = "list"
-    Set propertyCheck( appName _ ".model.Definition.nestedSchemaAnonymous", "SchemaObject1", "Type" ) = "object1"
-
-    ; GET /firstservice/{id} operation Id FirstServiceId
-
-    Set classExists( appName _ ".msg.FirstServiceIdRequest" ) = ""
-    Set classExists( appName _ ".msg.FirstServiceIdResponse" ) = ""
-    Set classExists( appName _ ".bs.FirstServiceIdService" ) = ""
-
-    Set propertyCheck( appName _ ".msg.FirstServiceIdRequest", "pathid", "Type" ) = "%Integer"
-    Set propertyCheck( appName _ ".msg.FirstServiceIdRequest", "consume", "Type" ) = "%String"
-    Set propertyCheck( appName _ ".msg.FirstServiceIdRequest", "accept", "Type" ) = "%String"
-    Set propertyCheck( appName _ ".msg.FirstServiceIdRequest", "headerheaderTest", "Type" ) = "%String"
-    Set propertyCheck( appName _ ".msg.FirstServiceIdResponse", "object1", "Type" ) = appName _ ".model.Definition.object1"
-    Set propertyCheck( appName _ ".msg.FirstServiceIdResponse", "listobject1", "Type" ) = appName _ ".model.Definition.object1"
-    Set propertyCheck( appName _ ".msg.FirstServiceIdResponse", "listobject1", "Collection" ) = "list"
-    
-
-    ; POST /firstservice generated operation ID : postfirstservice
-
-    Set classExists( appName _ ".msg.postfirstserviceRequest" ) = ""
-    Set classExists( appName _ ".bs.postfirstserviceService" ) = ""
-
-    Set propertyCheck( appName _ ".msg.postfirstserviceRequest", "consume", "Type" ) = "%String"
-    Set propertyCheck( appName _ ".msg.postfirstserviceRequest", "accept", "Type" ) = "%String"
-    Set propertyCheck( appName _ ".msg.postfirstserviceRequest", "bodyname", "Type" ) = appName _ ".model.Definition.object1"
-
-    ; GET /withallof operation ID : GetWithAllOf
-
-    Set classExists( appName _ ".msg.GetWithAllOfRequest" ) = ""
-    Set classExists( appName _ ".msg.GetWithAllOfResponse" ) = ""
-    Set classExists( appName _ ".bs.GetWithAllOfService" ) = ""
-    Set classExists( appName _ ".model.Definition.testSimpleAllOf" ) = ""
-    Set classExists( appName _ ".model.Definition.nested201AllOf" ) = ""
-    Set classExists( appName _ ".model.Definition.nested204ArrayAllOf" ) = ""
-    
-    Set propertyCheck( appName _ ".model.Definition.testSimpleAllOf", "additionalInfo1", "Type" ) = "%String"
-    Set propertyCheck( appName _ ".model.Definition.testSimpleAllOf", "additionalInfo2", "Type" ) = "%String"
-    Set propertyCheck( appName _ ".model.Definition.nested201AllOf", "allOf201AddInfo", "Type" ) = "%String"
-    Set propertyCheck( appName _ ".msg.GetWithAllOfResponse", "testSimpleAllOf", "Type" ) = appName _ ".model.Definition.testSimpleAllOf"
-    Set propertyCheck( appName _ ".msg.GetWithAllOfResponse", "nested201AllOf", "Type" ) = appName _ ".model.Definition.nested201AllOf"
-
-    Set propertyCheck( appName _ ".msg.GetWithAllOfResponse", "listnested204ArrayAllOf", "Type" ) = appName _ ".model.Definition.nested204ArrayAllOf"
-    Set propertyCheck( appName _ ".msg.GetWithAllOfResponse", "listnested204ArrayAllOf", "Collection" ) = "list"
-    Set propertyCheck( appName _ ".msg.GetWithAllOfRequest", "bodyallOfParameters", "Type" ) = appName _ ".model.Definition.allOfParameters"
-
-    ; POST /withallof operation ID : PostWithAllOf
-
-    Set classExists( appName _ ".msg.PostWithAllOfRequest" ) = ""
-    Set classExists( appName _ ".bs.PostWithAllOfService" ) = ""
-    Set classExists( appName _ ".model.Definition.NestedallOfParameters" ) = ""
-    
-    Set propertyCheck( appName _ ".msg.PostWithAllOfRequest", "bodyNestedallOfParameters", "Type" ) = appName _ ".model.Definition.NestedallOfParameters"
-    Set propertyCheck( appName _ ".model.Definition.NestedallOfParameters", "aFieldInAllOf2", "Type" ) = "%String"
-
-    ; PUT /withallof operation ID : PutWithAllOf
-
-    Set classExists( appName _ ".msg.PutWithAllOfRequest" ) = ""
-    Set classExists( appName _ ".bs.PutWithAllOfService" ) = ""
-    Set classExists( appName _ ".model.Definition.ListNestedallOfParameters" ) = ""
-    
-    Set propertyCheck( appName _ ".msg.PutWithAllOfRequest", "bodyListNestedallOfParameters", "Type" ) = appName _ ".model.Definition.ListNestedallOfParameters"
-    Set propertyCheck( appName _ ".model.Definition.ListNestedallOfParameters", "aFieldInAllOf3", "Type" ) = "%String"
-    
-
-    /* CHECK Method Exists */
-    #define MethodId(%class,%method) appName _ "." _ %class _ "||" _ %method
-
-    Set methodExists( $$$MethodId("rest.REST", "GETFirstServiceId") , "FormalSpec" ) = "id:%String"
-    Set methodExists( $$$MethodId("rest.REST", "GETGetWithAllOf") , "FormalSpec") = ""
-    Set methodExists( $$$MethodId("rest.REST", "POSTPostWithAllOf") , "FormalSpec" ) = ""
-    Set methodExists( $$$MethodId("rest.REST", "POSTpostfirstservice") , "FormalSpec" ) = ""
-    Set methodExists( $$$MethodId("rest.REST", "POSTpostnestedobject") , "FormalSpec" ) = ""
-    Set methodExists( $$$MethodId("rest.REST", "PUTPutWithAllOf") , "FormalSpec" ) = ""
-    Set methodExists( $$$MethodId("rest.REST", "SwaggerSpec") , "FormalSpec" ) = ""
-    
-    Set methodExists( $$$MethodId("bo.Operation", "GETFirstServiceId") , "FormalSpec" ) = $$$FormatText("pRequest:%1.msg.FirstServiceIdRequest,pResponse:%1.msg.GenericResponse",appName)
-    Set methodExists( $$$MethodId("bo.Operation", "GETGetWithAllOf") , "FormalSpec" ) = $$$FormatText("pRequest:%1.msg.GetWithAllOfRequest,pResponse:%1.msg.GenericResponse",appName)
-    Set methodExists( $$$MethodId("bo.Operation", "GetRequest") , "FormalSpec" ) = "pRequest:Ens.Request"
-    Set methodExists( $$$MethodId("bo.Operation", "POSTPostWithAllOf") , "FormalSpec" ) = $$$FormatText("pRequest:%1.msg.PostWithAllOfRequest,pResponse:%1.msg.GenericResponse",appName)
-    Set methodExists( $$$MethodId("bo.Operation", "POSTpostfirstservice") , "FormalSpec" ) = $$$FormatText("pRequest:%1.msg.postfirstserviceRequest,pResponse:%1.msg.GenericResponse",appName)
-    Set methodExists( $$$MethodId("bo.Operation", "POSTpostnestedobject") , "FormalSpec" ) = $$$FormatText("pRequest:%1.msg.postnestedobjectRequest,pResponse:%1.msg.GenericResponse",appName)
-    Set methodExists( $$$MethodId("bo.Operation", "PUTPutWithAllOf") , "FormalSpec" ) = $$$FormatText("pRequest:%1.msg.PutWithAllOfRequest,pResponse:%1.msg.GenericResponse",appName)
-    Set methodExists( $$$MethodId("bo.Operation", "genericProcessResponse") , "FormalSpec" ) = $$$FormatText("pRequest:Ens.Request,pResponse:%1.msg.GenericResponse,caller:%String,status:%Status,pHttpResponse:%Net.HttpResponse,parsedResponseClassName:%String",appName)
 
     TSTART
     Try {

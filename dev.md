@@ -1,12 +1,17 @@
 # useful commands
 ## clean up docker 
+use it when docker says "There is no space left on device". It will remove built but not used images and other temporary files.
 ```
 docker system prune -f
 ```
 
+```
+docker rm -f $(docker ps -qa)
+```
+
 ## build container with no cache
 ```
-docker-compose build --no-cache
+docker-compose build --no-cache --progress=plain
 ```
 ## start iris container
 ```
@@ -18,12 +23,31 @@ docker-compose up -d
 docker-compose exec iris iris session iris -U IRISAPP
 ```
 
+## map iris key from Mac home directory to IRIS in container
+- ~/iris.key:/usr/irissys/mgr/iris.key
+
+## install git in the docker image
+## add git in dockerfile
+USER root
+RUN apt update && apt-get -y install git
+
+USER ${ISC_PACKAGE_MGRUSER}
+
+
 ## install docker-compose
 ```
 sudo curl -L "https://github.com/docker/compose/releases/download/1.26.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 
 sudo chmod +x /usr/local/bin/docker-compose
 
+```
+
+## load and test module
+```
+
+zpm "load /home/irisowner/irisdev"
+
+zpm "test dc-sample"
 ```
 
 ## select zpm test registry
@@ -34,6 +58,11 @@ repo -n registry -r -url https://test.pm.community.intersystems.com/registry/ -u
 ## get back to public zpm registry
 ```
 repo -r -n registry -url https://pm.community.intersystems.com/
+```
+
+## export a global in runtime into the repo
+```
+d $System.OBJ.Export("GlobalD.GBL","/irisrun/repo/src/gbl/GlobalD.xml")
 ```
 
 ## create a web app in dockerfile
@@ -51,22 +80,19 @@ zn "%SYS" \
   write "Web application "_webName_" has been created!",! 
 ```
 
-zw ##class(community.csvgen).GenerateFromURL("https://github.com/h2oai/h2o-tutorials/raw/master/h2o-world-2017/automl/data/product_backorders.csv")
 
-## Create rest api
 
 ```
-zn "irisapp"
-Do ^%REST
+do $SYSTEM.OBJ.ImportDir("/opt/irisbuild/src",, "ck") 
+```   
 
-Application name : dc.openapi.client.api
-OpenAPI 2.0 swagger: /opt/irisapp/src/clientgen.json
-web app name : /swaggerclientgen/api
-```
-Swagger UI : http://localhost:52795/swagger-ui/index.html
-Swagger URL : http://localhost:52795/swaggerclientgen/api/_spec
 
-Swagger-UI : https://www.lscalese.ovh/swagger-ui/index.html
-Swagger URL : https://www.lscalese.ovh/swaggerclientgen/api/_spec
+### run tests described in the module
 
-PetShop example specification : https://petstore.swagger.io/v2/swagger.json
+IRISAPP>zpm
+IRISAPP:zpm>load /irisrun/repo
+IRISAPP:zpm>test package-name
+
+### install ZPM with one line
+    // Install ZPM
+    set $namespace="%SYS", name="DefaultSSL" do:'##class(Security.SSLConfigs).Exists(name) ##class(Security.SSLConfigs).Create(name) set url="https://pm.community.intersystems.com/packages/zpm/latest/installer" Do ##class(%Net.URLParser).Parse(url,.comp) set ht = ##class(%Net.HttpRequest).%New(), ht.Server = comp("host"), ht.Port = 443, ht.Https=1, ht.SSLConfiguration=name, st=ht.Get(comp("path")) quit:'st $System.Status.GetErrorText(st) set xml=##class(%File).TempFilename("xml"), tFile = ##class(%Stream.FileBinary).%New(), tFile.Filename = xml do tFile.CopyFromAndSave(ht.HttpResponse.Data) do ht.%Close(), $system.OBJ.Load(xml,"ck") do ##class(%File).Delete(xml)

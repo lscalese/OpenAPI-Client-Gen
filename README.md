@@ -1,6 +1,6 @@
 ## OPENAPI Client Gen
 
-This is an application to generate a [simple REST Http client](#Simple-Http-Client-Sample) or an [Iris interoperability production](#Production-Sample) client from a Swagger 2.0 specification document.  
+This is an application to generate a [simple REST Http client](#Simple-Http-Client-Sample) or an [Iris interoperability production](#Production-Sample) client from a OpenAPI specification.  
 Instead of existing tools, this application generates client production.
 
 It could be used as tool to create production on your local instance or to be hosted.  
@@ -12,44 +12,81 @@ Consider the generated Production\classes client as a template ready to use.
 &nbsp;
 ## Table of contents  
 &nbsp;
-1. [Production Sample](https://github.com/lscalese/OpenAPI-Client-Gen/blob/master/README.md#Production-Sample)  
-2. [Simple Http Client Sample](https://github.com/lscalese/OpenAPI-Client-Gen/blob/master/README.md#Simple-Http-Client-Sample)  
-3. [Installation ZPM](https://github.com/lscalese/OpenAPI-Client-Gen/blob/master/README.md#Installation-ZPM)
-4. [Installation Docker](https://github.com/lscalese/OpenAPI-Client-Gen/blob/master/README.md#Installation-Docker)  
+1. [Installation ZPM](https://github.com/lscalese/OpenAPI-Client-Gen/blob/master/README.md#Installation-ZPM)
+2. [Installation Docker](https://github.com/lscalese/OpenAPI-Client-Gen/blob/master/README.md#Installation-Docker)  
+3. [Production Sample](https://github.com/lscalese/OpenAPI-Client-Gen/blob/master/README.md#Production-Sample)  
+4. [Simple Http Client Sample](https://github.com/lscalese/OpenAPI-Client-Gen/blob/master/README.md#Simple-Http-Client-Sample)  
+
 &nbsp;
+
+## Installation ZPM
+
+You need a namespace with interoperability enabled.  
+
+If needed, You can enable the interoperability with:
+```
+Do ##class(%Library.EnsembleMgr).EnableNamespace($Namespace, 1)
+```
+
+Installation openapi-client-gen:
+```
+zpm "install openapi-client-gen"
+```
+
+There are dependencies, the following packages will be also installed:
+
+ * [objectscript-openapi-definition](https://openexchange.intersystems.com/package/objectscript-openapi-definition)  
+ * [yaml-utils](https://openexchange.intersystems.com/package/yaml-utils)  
+ * [swagger-converter-cli](https://openexchange.intersystems.com/package/swagger-converter-cli)  
+ * [swagger-validator-cli](https://openexchange.intersystems.com/package/swagger-validator-cli)  
+
+## Installation Docker
+
+Clone/git pull the repo into any local directory
+
+```bash
+git clone https://github.com/lscalese/OpenAPI-Client-Gen.git
+cd OpenAPI-Client-Gen
+docker-compose up -d
+```
   
 ## Production Sample
 
-In this sample we generate a production client for [petshop Swagger 2.0 API](https://petstore.swagger.io/) REST Api  
-from the [specification 2.0](https://petstore.swagger.io/v2/swagger.json).  
+In this sample we generate a production client for [petshop V3 API](https://petstore3.swagger.io/) REST Api  
+from the [specification 3.0](https://petstore3.swagger.io/api/v3/openapi.json).  
 
 ### Generate interoperatibility classes
 
-Let's start by generate interoperability classes from [petshop Swagger 2.0 document](https://petstore.swagger.io/).  
+Let's start by generate interoperability classes from [petshop swagger V3](https://petstore.swagger.io/).  
 
 ```
 Zn "irisapp"
-Set sc = ##class(dc.openapi.client.Spec).generateApp("petshop", "https://petstore.swagger.io:443/v2/swagger.json")
+Set sc = ##class(dc.openapi.client.Spec).generateApp("petshop", "https://petstore3.swagger.io/api/v3/openapi.json")
 Write !,"Status : ",$SYSTEM.Status.GetOneErrorText(sc)
 ```
-The first argument is the package name where the classes will be generated and the second is the Swagger 2.0 specification URL.  
+The first argument is the package name where the classes will be generated and the second is the OpenAPI specification URL.  
 Also the [method](https://github.com/lscalese/OpenAPI-Client-Gen/blob/master/src/dc/openapi/client/Spec.cls#L11) accept a filename or a dynamic object.  
+The generator accept :  
+
+ * JSON format.  
+ * YAML format (using [yaml-utils](https://openexchange.intersystems.com/package/yaml-utils) to convert in JSON format).  
+ * Swagger specification version 1.x, 2.x, 3.x but version 1.x and 2.x will be converted in version 3.0 using [swagger-converter-cli](https://openexchange.intersystems.com/package/swagger-converter-cli) before processing.  
 
 
 Take a look on these generated classes:  
 
 * **Business service classes**  
-BusinessService classes are suffixed by "Service".  There is a Business Service for each request defined in the specification document.  
+BusinessService classes are in the sub-package `services`.  There is a Business Service for each request defined in the specification document.  
 The generated classes are templates which should be edited with your need.  
 
 
 * **Ens.Request classes**  
-For each request defined, an Ens.Request class is generated suffixed by "Request".  
+For each request defined, an Ens.Request class are located in the sub-package `requests`.  
 This class represent all of parameters (query parameters, path, body, headers, formdata).  
 The Business operation will consume an instance of this class to generate a related http request.  
 
 * **GenericResponse class**  
-The Ens.Response generated subclass is named "package.GenericResponse" (petshop.msg.GenericResponse in this sample).  
+The Ens.Response generated subclass is named "package.GenericResponse" (petshop.responses.GenericResponse in this sample).  
 It contains some properties to store the body response, headers, http status code, performed operation and status.  
 
 * **Business Process class**  
@@ -57,312 +94,75 @@ The generated Business process name is simply packageName.Process (petshop.bp.Pr
 This is a basic implementation that redirect all messages to the Business Operation.  
 
 * **Business Operation class**  
-Probably the most usefull generated class in this project.  
+Probably the most usefull generated class in this project  (petshop.bo.Operation in this sample)..  
 It contain a method for each request and build a %Net.HttpRequest instance from the Ens.Request subclass.  
 A message map XDATA is also generated to call automatically the related method for the received message.  
-A method "genericProcessResponse" is called after each request, feel free to edit with your need.  
 
 * **Production class**  
 A pre-configured production is also generated named pakagename.Production (petshop.Production in this sample).  
 All Business Services are disabled by default.  
-
-* **Rest Proxy application**  
-Usefull for testing from an http client tools (petshop.REST class).  
-We use curl command line in this sample.  
-  
-  
-| Generated Classes | Description |
-| --- | --- |
-| petshop.Production | Production configuration |
-| petshop.Utils | Utils class |
-| petshop.bo.Operation | Busniness Operation |
-| petshop.bp.Process | Generic Business Process |
-| petshop.bs.ProxyService | Empty class to use for proxy rest application |
-| petshop.bs.addPetService | addPetService Business Service |
-| petshop.bs.createUserService | createUserService Business Service |
-| petshop.bs.createUsersWithArrayInputService | createUsersWithArrayInputService Business Service |
-| petshop.bs.createUsersWithListInputService | createUsersWithListInputService Business Service |
-| petshop.bs.deleteOrderService | deleteOrderService Business Service |
-| petshop.bs.deletePetService | deletePetService Business Service |
-| petshop.bs.deleteUserService | deleteUserService Business Service |
-| petshop.bs.findPetsByStatusService | findPetsByStatusService Business Service |
-| petshop.bs.findPetsByTagsService | findPetsByTagsService Business Service |
-| petshop.bs.getInventoryService | findPetsByTagsService Business Service |
-| petshop.bs.getOrderByIdService | getOrderByIdService Business Service |
-| petshop.bs.getPetByIdService | getPetByIdService Business Service |
-| petshop.bs.getUserByNameService | getUserByNameService Business Service |
-| petshop.bs.loginUserService | loginUserService Business Service |
-| petshop.bs.logoutUserService | logoutUserService Business Service |
-| petshop.bs.placeOrderService | placeOrderService Business Service |
-| petshop.bs.updatePetService | updatePetService Business Service |
-| petshop.bs.updatePetWithFormService | updatePetWithFormService Business Service |
-| petshop.bs.updateUserService | updateUserService Business Service |
-| petshop.bs.uploadFileService | uploadFileService Business Service |
-| petshop.model.Definition.ApiResponse | ApiResponse model included in Request or response message |
-| petshop.model.Definition.Category | Category model included in Request or response message |
-| petshop.model.Definition.Order | Order model included in Request or response message |
-| petshop.model.Definition.Pet |  Petmodel included in Request or response message |
-| petshop.model.Definition.Tag | Tag model included in Request or response message |
-| petshop.model.Definition.User | User model included in Request or response message |
-| petshop.model.spec | Swagger 2.0 used for generate all classes |
-| petshop.msg.GenericResponse | Generic Ens.Response |
-| petshop.msg.ParsedResponse | Super class of models (petshop.mode.Definition) |
-| petshop.msg.addPetRequest | addPet Ens.Request |
-| petshop.msg.createUserRequest | createUser Ens.Request |
-| petshop.msg.createUsersWithArrayInputRequest | reateUsersWithArrayInput Ens.Request |
-| petshop.msg.createUsersWithListInputRequest | createUsersWithListInput Ens.Request |
-| petshop.msg.deleteOrderRequest | deleteOrder Ens.Request |
-| petshop.msg.deletePetRequest | deletePet Ens.Request |
-| petshop.msg.deleteUserRequest | deleteUser Ens.Request |
-| petshop.msg.findPetsByStatusRequest | findPetsByStatus Ens.Request |
-| petshop.msg.findPetsByStatusResponse | findPetsByStatus Ens.Response |
-| petshop.msg.findPetsByTagsRequest | indPetsByTags Ens.Request |
-| petshop.msg.findPetsByTagsResponse | indPetsByTags Ens.Response |
-| petshop.msg.getInventoryRequest | getInventory Ens.Request |
-| petshop.msg.getOrderByIdRequest | getOrderById Ens.Request |
-| petshop.msg.getOrderByIdResponse | etOrderById Ens.Response |
-| petshop.msg.getPetByIdRequest | getPetById Ens.Request |
-| petshop.msg.getPetByIdResponse | getPetById Ens.Response |
-| petshop.msg.getUserByNameRequest | getUserByName Ens.Request |
-| petshop.msg.getUserByNameResponse | getUserByName Ens.Response |
-| petshop.msg.loginUserRequest | loginUser Ens.Request |
-| petshop.msg.logoutUserRequest | logoutUser Ens.Request |
-| petshop.msg.placeOrderRequest | placeOrder Ens.Request |
-| petshop.msg.placeOrderResponse | placeOrder Ens.Response |
-| petshop.msg.updatePetRequest | updatePet Ens.Request |
-| petshop.msg.updatePetWithFormRequest | updatePetWithForm Ens.Request |
-| petshop.msg.updateUserRequest | updateUser Ens.Request |
-| petshop.msg.uploadFileRequest | uploadFile Ens.Request |
-| petshop.msg.uploadFileResponse | ploadFile Ens.Response |
-| petshop.rest.Projection | Projection to setting up Proxy REST application at compile time |
-| petshop.rest.REST | Proxy REST application |
   
   
 ### Configure a production  
 
-Open and start petshop.Production from [production page](http://localhost:52795/csp/irisapp/EnsPortal.ProductionConfig.zen).    
+Open and start petshop.Production from [production page](http://localhost:52773/csp/irisapp/EnsPortal.ProductionConfig.zen).    
 This is the auto generated production.  
 <img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Production-Open-1.png">
 
-<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/ProxyService-1.png">
-
 Great!  Our production is ready.  
-Let's push input data.
+
+## Code snipet
 
 ### Add Pet
 
-The generated production include REST api provided for proxy usage.  
-The rest class is petshop.REST for this sample.  
-The web application is automatically configured at compile time (using a Projection).  
-
-Since version 1.2.0, swagger specification is available for the generated proxy, ex :  `/petshoprest/_spec`  
-
-To generate input data, we use curl command line.  
+Let's start by add a pet to the public REST service petstore.  
 
 **Add a pet to Petstore :**  
-```
-curl --location --request POST 'http://localhost:52795/petshoprest/pet' \
---header 'Content-Type: application/json' \
---data-raw '{
-  "category": {
-    "id": 0,
-    "name": "string"
-  },
-  "id" : 456789,
-  "name": "Kitty_Galore",
-  "photoUrls": [
-    "string"
-  ],
-  "tags": [
-    {
-      "id": 0,
-      "name": "string"
-    }
-  ],
-  "status": "available"
-}'
-```
-
-The production runs in async mode, so the rest proxy application does not wait for the response.  
-Don't wait a body response.  
-This behavior could be edited, but basically, Interoperability production uses async mode.  
-
-**Edit : sync mode is used for proxy rest application since version 1.1.0+**
-
-### Upload an image
-```
-curl --location --request POST 'http://localhost:52795/petshoprest/pet/456789/uploadImage' \
---form 'file=@/home/lorenzo/Pictures/call.jpg' \
---form 'additionalMetadata=tag1'
-```
-to adapt with your own image path.  
-
-### Get By ID
 
 ```
-curl --location --request GET 'http://localhost:52795/petshoprest/pet/456789'
+Set messageRequest = ##class(petshop.requests.addPet).%New(), messageRequest.body1 = ##class(petshop.model.Pet).%New()
+Set messageRequest.%ContentType = "application/json"
+Do messageRequest.body1.%JSONImport({"id":123,"name":"Kitty Galore","photoUrls":["https://localhost/img.png"],"status":"pending"})
+Set sc = ##class(petshop.Utils).invokeHostSync("petshop.bp.SyncProcess", messageRequest, "petshop.bs.ProxyService", , .pResponse)
+If $$$ISERR(sc) Do $SYSTEM.Status.DisplayError(sc)
 ```
 
-### Find By Status
+
+
+<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Visual-Trace.png">
+
+The example below use the interoperability framework, so there is another way if you don't want use the framework.  
+The following example allows to create a pet with a simple http client:  
 
 ```
-curl --location --request GET 'http://localhost:52795/petshoprest/pet/findByStatus?status=pending'
+Set messageRequest = ##class(petshop.requests.addPet).%New(), messageRequest.body1 = ##class(petshop.model.Pet).%New()
+Set messageRequest.%ContentType = "application/json"
+Do messageRequest.body1.%JSONImport({"id":123,"name":"Kitty Galore","photoUrls":["https://localhost/img.png"],"status":"pending"})
+Set httpClient = ##class(petshop.HttpClient).%New("https://petstore3.swagger.io/api/v3","DefaultSSL")
+Set sc = httpClient.addPet(messageRequest, .messageResponse)
+; If needed, you have a direct access to the %Net.HttpResquest in `httpClient.HttpRequest` property.  
+If $$$ISERR(sc) Do $SYSTEM.Status.DisplayError(sc) Quit sc
+Write !,"Http Status code : ", messageResponse.httpStatusCode,!
+Do messageResponse.Pet.%JSONExport()
 ```
 
-Important: Sometimes, there is invalid data on the server ... A parse error can occured due to a required  
-field in the specification not returned by the server.  
+### Generate a simple client application
 
-### Delete pet
-
-```
-curl --location --request DELETE 'http://localhost:52795/petshoprest/pet/456789' \
---header 'Accept: application/json' \
---header 'api-key: special-key'
-```
-
-### Create User 
-```
-curl --location --request POST 'http://localhost:52795/petshoprest/user/createWithArray' \
---header 'Content-Type: application/json' \
---data-raw '[
-  {
-    "id": 14835440378,
-    "username": "contest01",
-    "firstName": "contest02",
-    "lastName": "contest",
-    "email": "string",
-    "password": "string",
-    "phone": "string",
-    "userStatus": 0
-  },
-  {
-    "id": 14835440379,
-    "username": "contest02",
-    "firstName": "contest02",
-    "lastName": "contest02",
-    "email": "string",
-    "password": "string",
-    "phone": "string",
-    "userStatus": 0
-  }
-]'
-```
-
-### Get User by name
-
-```
-curl --location --request GET 'http://localhost:52795/petshoprest/user/contest02'
-```
-
-Now you can check your production and the message viewer.
-
-<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Production-MessageViewer-2.png">
-
-Also you can analyze all messages with visual trace.  
-<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Visual-Trace-2.png">
-<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/GetById.png">
-<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/FindByStatus.png">
-
-
-
-**SQL Query to show GenericResponse records :**
-```
-select ID, httpStatusCode, operation, operationStatusText, SUBSTRING(body,1)
-from petshop.GenericResponse
-order by id desc
-```
-
-### How It works
-
-What happened when you add a pet with the curl command?  
-In short : 
-
-* The /petshoprest is invoked and create an instance of petshop.msg.addPetRequest (this is an Ens.Request subclass).  
-* The rest process invoke Business Process (petshop.bp.Process) using petshop.bs.ProxyService.  
-* petshop.bp.Process send the request to the Business Operation (petshop.bo.Operation).  
-* petshop.bo.Operation create an http request related to the received Ens.Request instance and fill a petshop.GenericResponse.  
-* petshop.bp.Process receive the response.  
-
-## Simple Http Client Sample
-
-### Generate client application
+By default generator produces classes for interoperability framework and a simple http client.  
+If you don't only the simple http client without interoperability classes, you can use the following command:  
 
 ```
 Set features("simpleHttpClientOnly") = 1
 Set sc = ##class(dc.openapi.client.Spec).generateApp("petshopclient", "https://petstore.swagger.io/v2/swagger.json", .features)
 ```
 
-Http client class is `petshopclient.HttpClient`.  
-Take a look, there is a method for each service defined in specification.  
-
-### Test client
-
-Request example.  
-
-Create pet  
-
-
-```
-Set pet = {"category":{"id":0,"name":"string"},"id":456789,"name":"Kitty_Galore","photoUrls":["string"],"tags":[{"id":0,"name":"string"}],"status":"available"}
-Set addPetRequest = ##class(petshopclient.msg.AddPetRequest).%New()
-Set petModel = ##class(petshopclient.model.Definition.Pet).%New()
-Do petModel.%JSONImport(pet)
-Set addPetRequest.bodybody = petModel
-Set addPetRequest.accept = "application/json"
-Set addPetRequest.consume = "application/json"
-Set httpClient = ##class(petshopclient.HttpClient).%New()
-Set sc = httpClient.POSTAddPet(addPetRequest, .response, , .httpResponse )
-Write !, "Operation Status : ",$SYSTEM.Status.GetOneErrorText(sc)
-Write !, "Http status : ", response.httpStatusCode
-Write !, "Response Body : ", !,response.body.Read()
-```
-
-Get created pet  
-
-```
-Set getPetRequest = ##class(petshopclient.msg.GetPetByIdRequest).%New()
-Set getPetRequest.pathpetId = 456789
-Set getPetRequest.accept = "application/json"
-Set getPetRequest.consume = "application/json"
-Set httpClient = ##class(petshopclient.HttpClient).%New()
-Set sc = httpClient.GETGetPetById(getPetRequest, .response, , .httpResponse )
-Write !, "Operation Status : ",$SYSTEM.Status.GetOneErrorText(sc)
-Write !, "Http status : ", response.httpStatusCode
-Write !, "Response body : ", !,response.body.Read()
-Write !,!, "Parsed Response (pet name) : ", response.parsedResponse.Pet.name
-```
-
-By Default, `%Net.HttpRequest` is built by `GetRequest` method.  
-You can built your own %Net.HttpRequest object and use it by third argument :  
-
-```
-Set pHttpRequestIn = ##class(%Net.HttpRequest).%New()
-Set pHttpRequestIn.Server = "petstore.swagger.io"
-Set pHttpRequestIn.Https = 1
-Set pHttpRequestIn.SSLConfiguration = "default"
-
-Set getPetRequest = ##class(petshopclient.msg.GetPetByIdRequest).%New()
-Set getPetRequest.pathpetId = 456789
-Set getPetRequest.accept = "application/json"
-Set getPetRequest.consume = "application/json"
-Set httpClient = ##class(petshopclient.HttpClient).%New()
-
-Set sc = httpClient.GETGetPetById(getPetRequest, .response, pHttpRequestIn , .httpResponse )
-
-Write !, "Operation Status : ",$SYSTEM.Status.GetOneErrorText(sc)
-Write !, "Http status : ", response.httpStatusCode
-Write !, "Response body : ", !,response.body.Read()
-Write !,!, "Parsed Response (pet name) : ", response.parsedResponse.Pet.name
-```
-
-
-## Code snippet
+## Useful command
 
 ### Generate production on local machine
 
 By URL
 ```
-Set sc = ##class(dc.openapi.client.Spec).generateApp("petshop", "https://petstore.swagger.io:443/v2/swagger.json")
+Set sc = ##class(dc.openapi.client.Spec).generateApp("petshop", "https://petstore3.swagger.io/api/v3/openapi.json")
 ```
 By filename, ex:
 ```
@@ -379,7 +179,7 @@ Set sc = ##class(dc.openapi.client.Spec).generateApp("petshop", spec)
 
 ```
 Set features("simpleHttpClientOnly") = 1
-Set sc = ##class(dc.openapi.client.Spec).generateApp("simpleclient", "https://petstore.swagger.io/v2/swagger.json", .features)
+Set sc = ##class(dc.openapi.client.Spec).generateApp("simpleclient", "https://petstore3.swagger.io/api/v3/openapi.json", .features)
 ```
 
 ### Generate classes for export code purpose only
@@ -397,10 +197,10 @@ TROLLBACK ; Code has been exported to xmlStream, a simple TROLLBACK delete all g
 A REST Api is also available for upload swagger specification document and download all generated classes to xml format.  
 You can easily test it with swagger-ui tools:  
 
-* Open swagger-ui : http://localhost:52795/swagger-ui/index.html
+* Open swagger-ui : http://localhost:52795/swagger-ui/index.html  (swagger-ui package is required : `zpm "install swagger-ui"`)
 * Explore : http://localhost:52795/swaggerclientgen/api/_spec
 * Select schemes http.  
-* In the body parameter, put your swagger 2.0 on json format or an url to download the json file.
+* In the body parameter, put your OpenAPI specification on json format or an url to download the json file.
 * Click execute and then download.  
 
 <img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Swagger-ui-1.png">
@@ -412,38 +212,5 @@ Or use the basic embedded form at : http://localhost:52795/csp/swaggerclientgen/
 ## Prerequisites
 Make sure you have [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) and [Docker desktop](https://www.docker.com/products/docker-desktop) installed.
 
-## Installation ZPM
-
-Open IRIS Namespace with Interoperability Enabled.
-Open Terminal and call:
-```
-zpm "install openapi-client-gen"
-zpm "install objectscript-openapi-definition"
-zpm "install sslclient"
-```
-
-Optional swagger-ui: 
-```
-zpm "install swagger-ui"
-```
-
-## Installation Docker
-Clone/git pull the repo into any local directory
-
-```
-$ git clone https://github.com/lscalese/OpenAPI-Client-Gen.git
-```
-
-Open the terminal in this directory and run:
-
-```
-$ docker-compose build
-```
-
-3. Run the IRIS container with your project:
-
-```
-$ docker-compose up -d
-```
 
 <img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/how-to.gif">
