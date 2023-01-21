@@ -96,6 +96,9 @@ Method Generate() As %Status
     
     Set sc = $$$ADDSC(sc, ..GenerateMessageMap())
 
+    ; Force model with MAXLEN = ""
+    Set sc = $$$ADDSC(sc, ..ForceNotDefinedMAXLEN( ..application _ ".model"))
+
     Quit sc
 }
 
@@ -447,6 +450,36 @@ Method GenerateMessageMap() As %Status [ Private ]
 
     Do cDef.XDatas.Insert(xData)
     Return cDef.%Save()
+}
+
+ClassMethod ForceNotDefinedMAXLEN(package As %String, maxLenValue As %String = "") As %Status
+{
+    #dim propDef As %Dictionary.PropertyDefinition
+    Set sc = $$$OK, (startKey, className) = package _"."
+    
+    For  {
+        Set className = $Order(^oddDEF(className))
+        Quit:$Extract(className, 1, $LENGTH(startKey))'=startKey
+
+        Set classDef = ##class(%Dictionary.ClassDefinition).%OpenId(className,, .scO)
+        If $$$ISERR(sc) {
+            Set sc = $$$ADDSC(sc, scO)
+            Continue
+        }
+
+        Set key = ""
+        For  {
+            Set propDef = classDef.Properties.GetNext(.key)
+            Quit:key=""
+            If "%String,%Library.String,%VarString"[propDef.Type, propDef.Parameters.GetAt("MAXLEN") = "" {
+                $$$zlog("Force " _ className _" " _ propDef.Name _" with MAXLEN=" _ maxLenValue)
+                Do propDef.Parameters.SetAt(maxLenValue, "MAXLEN")
+                Set sc = $$$ADDSC(sc, propDef.%Save()) 
+            }
+        }
+    }
+
+    Quit sc
 }
 
 XData ProductionDefinitionTemplate
