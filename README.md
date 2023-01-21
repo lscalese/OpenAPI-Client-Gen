@@ -113,6 +113,8 @@ Great!  Our production is ready.
 
 ## Code snipet
 
+You can find code snipet in the [sames petshop class](https://github.com/lscalese/OpenAPI-Client-Gen/blob/master/src/dc/openapi/client/samples/PetShop.cls).  
+
 ### Add Pet
 
 Let's start by add a pet to the public REST service petstore.  
