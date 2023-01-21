@@ -426,7 +426,7 @@ Method GenerateLoadHttpRequestObject(path As %String, pathItem As %DynamicObject
             Set line = condition _ " Do ..%1.XMLExportToStream(httpRequest.EntityBody)"
             Do methodDef.Implementation.WriteLine( $Char(9) _ $$$FormatText(line, propertyName))
 
-        } ElseIf ($$$LOWER(contentType) [ "multipart/form-data") || ($$$LOWER(contentType) [ "application/octet-stream") {
+        } ElseIf ($$$LOWER(contentType) [ "multipart/form-data") {
             
             Do methodDef.Implementation.WriteLine( $Char(9) _ condition _ "{")
 
@@ -449,7 +449,18 @@ Method GenerateLoadHttpRequestObject(path As %String, pathItem As %DynamicObject
 
             Do methodDef.Implementation.WriteLine( $Char(9) _ "}")
         
-        } Else {
+        } ElseIf $$$LOWER(contentType) [ "application/octet-stream" {
+            Do methodDef.Implementation.WriteLine( $Char(9) _ condition _ " {")
+
+            If propDef.Type = "%Stream.GlobalBinary" {
+                Do methodDef.Implementation.WriteLine( $Char(9,9) _"Do httpRequest.EntityBody.CopyFrom(.."_ $$$CodeNormalizeProperty(propDef.Name) _")")
+            }Else {
+                Do methodDef.Implementation.WriteLine( $Char(9,9) _ "; To implement.  There is no code generation for this case.")
+                Do methodDef.Implementation.WriteLine( $Char(9,9) _ "$$$ThrowStatus($$$ERROR($$$NotImplemented))")
+            }
+
+            Do methodDef.Implementation.WriteLine( $Char(9) _ "}")
+        }Else {
             Do methodDef.Implementation.WriteLine( $Char(9) _ condition _" {")
             Do methodDef.Implementation.WriteLine( $Char(9,9) _ "; To implement.  There is no code generation yet for this case.")
             Do methodDef.Implementation.WriteLine( $Char(9,9) _ "$$$ThrowStatus($$$ERROR($$$NotImplemented))")
@@ -597,7 +608,7 @@ Method GenerateLoadFromRequestMethod(path As %String, pathItem As %DynamicObject
                 Do methodDef.Implementation.WriteLine( $Char(9) _ "}" )
             }
 
-        } ElseIf ($$$LOWER(contentType) [ "multipart/form-data") || ($$$LOWER(contentType) [ "application/octet-stream") {
+        } ElseIf ($$$LOWER(contentType) [ "multipart/form-data") {
             
             Do methodDef.Implementation.WriteLine( $Char(9) _ condition _ "{")
 
@@ -613,6 +624,19 @@ Method GenerateLoadFromRequestMethod(path As %String, pathItem As %DynamicObject
 
             Do methodDef.Implementation.WriteLine( $Char(9) _ "}")
         
+        } ElseIf $$$LOWER(contentType) [ "application/octet-stream" {
+            Do methodDef.Implementation.WriteLine( $Char(9) _ condition _ "{")
+
+            If propDef.Type = "%Stream.GlobalBinary" {
+                Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Do .." _ $$$CodeNormalizeProperty(propDef.Name) _ ".CopyFrom(request.Content)" )
+            } Else {
+                
+                Do methodDef.Implementation.WriteLine( $Char(9,9) _ "; To implement.  There is no code generation for this case.")
+                Do methodDef.Implementation.WriteLine( $Char(9,9) _ "$$$ThrowStatus($$$ERROR($$$NotImplemented))")
+            }
+
+            Do methodDef.Implementation.WriteLine( $Char(9) _ "}")
+
         } Else {
             Do methodDef.Implementation.WriteLine( $Char(9) _ condition _" {")
             Do methodDef.Implementation.WriteLine( $Char(9,9) _ "; To implement.  There is no code generation yet for this case.")

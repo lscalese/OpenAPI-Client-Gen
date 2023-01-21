@@ -42,7 +42,7 @@ ClassMethod addPetSimpleClient() As %Status
     Set sc = $$$OK
     Set messageRequest = ##class(petshop.requests.addPet).%New(), messageRequest.body1 = ##class(petshop.model.Pet).%New()
     Set messageRequest.%ContentType = "application/json"
-    Do messageRequest.body1.%JSONImport({"id":123,"name":"Kitty Galore","photoUrls":["https://localhost/img.png"],"status":"pending"})
+    Do messageRequest.body1.%JSONImport({"id":123,"name":"Kitty Galore","photoUrls":["ttps://www.tippett.com/wp-content/uploads/2017/01/ca2DC049.130.1264.jpg"],"status":"pending"})
     Set httpClient = ##class(petshop.HttpClient).%New("https://petstore3.swagger.io/api/v3","DefaultSSL")
     Set sc = httpClient.addPet(messageRequest, .messageResponse)
     If $$$ISERR(sc) Do $SYSTEM.Status.DisplayError(sc) Quit sc
@@ -105,6 +105,38 @@ ClassMethod findPetUsingHttpClient(status As %String = "availalbe") As %Status
     }
 
     Quit sc
+}
+
+ClassMethod uploadFile(filePath As %String = "/home/irisowner/irisdev/assets/TippettKittyGalore.jpg") As %Status
+{
+    Set sc = $$$OK
+
+    Set fileBinary = ##class(%Stream.FileBinary).%New()
+    Set sc = fileBinary.LinkToFile(filePath)
+    If $$$ISERR(sc) Do $SYSTEM.Status.DisplayError(sc) Quit sc
+
+    Set messageRequest = ##class(petshop.requests.uploadFile).%New()
+    Set messageRequest.%ContentType = "application/octet-stream"
+    Set messageRequest.%Consume = "application/json"
+    Set messageRequest.pathpetId = 123
+    Do messageRequest.body1.CopyFrom(fileBinary)
+
+    Set sc = ##class(petshop.Utils).invokeHostSync("petshop.bp.SyncProcess", messageRequest, "petshop.bs.ProxyService", , .messageResponse)
+
+    If $$$ISERR(sc) Do $SYSTEM.Status.DisplayError(sc) Quit sc
+
+    If messageResponse.httpStatusCode = 200 {
+        Do messageResponse.ApiResponse.%JSONExport()
+        Write !, "Hhere is an error on the petstore.swagger.io server"
+        Write !, "In case of https status code = 200, we should receive an ApiResponse object following the specification."
+        Write !, "but the server return a Pet object : ",!
+        
+        Do ##class(%JSON.Formatter).%New().Format(messageResponse.body)
+
+        Write !, !, "So the messageResponse.ApiResponse.%JSONExport() can be done successfully."
+    }
+    
+    Return sc
 }
 
 }
