@@ -120,10 +120,14 @@ Let's start by add a pet to the public REST service petstore.
 **Add a pet to Petstore :**  
 
 ```
-Set messageRequest = ##class(petshop.requests.addPet).%New(), messageRequest.body1 = ##class(petshop.model.Pet).%New()
+Set messageRequest = ##class(petshop.requests.addPet).%New(), 
 Set messageRequest.%ContentType = "application/json"
+
+Set messageRequest.body1 = ##class(petshop.model.Pet).%New()
 Do messageRequest.body1.%JSONImport({"id":123,"name":"Kitty Galore","photoUrls":["https://localhost/img.png"],"status":"pending"})
+
 Set sc = ##class(petshop.Utils).invokeHostSync("petshop.bp.SyncProcess", messageRequest, "petshop.bs.ProxyService", , .pResponse)
+
 If $$$ISERR(sc) Do $SYSTEM.Status.DisplayError(sc)
 ```
 
@@ -135,13 +139,20 @@ The example below use the interoperability framework, so there is another way if
 The following example allows to create a pet with a simple http client:  
 
 ```
-Set messageRequest = ##class(petshop.requests.addPet).%New(), messageRequest.body1 = ##class(petshop.model.Pet).%New()
+Set messageRequest = ##class(petshop.requests.addPet).%New()
+
 Set messageRequest.%ContentType = "application/json"
+Set messageRequest.body1 = ##class(petshop.model.Pet).%New()
+
 Do messageRequest.body1.%JSONImport({"id":123,"name":"Kitty Galore","photoUrls":["https://localhost/img.png"],"status":"pending"})
+
 Set httpClient = ##class(petshop.HttpClient).%New("https://petstore3.swagger.io/api/v3","DefaultSSL")
+
 Set sc = httpClient.addPet(messageRequest, .messageResponse)
 ; If needed, you have a direct access to the %Net.HttpResquest in `httpClient.HttpRequest` property.  
+
 If $$$ISERR(sc) Do $SYSTEM.Status.DisplayError(sc) Quit sc
+
 Write !,"Http Status code : ", messageResponse.httpStatusCode,!
 Do messageResponse.Pet.%JSONExport()
 ```

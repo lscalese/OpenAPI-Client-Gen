@@ -24,11 +24,16 @@ ClassMethod generatePetShopClient() As %Status
 ClassMethod addPet() As %Status
 {
     Set sc = $$$OK
-    Set messageRequest = ##class(petshop.requests.addPet).%New(), messageRequest.body1 = ##class(petshop.model.Pet).%New()
+    Set messageRequest = ##class(petshop.requests.addPet).%New()
     Set messageRequest.%ContentType = "application/json"
-    Do messageRequest.body1.%JSONImport({"id":123,"name":"Kitty Galore","photoUrls":["https://localhost/img.png"],"status":"pending"})
+    
+    Set messageRequest.body1 = ##class(petshop.model.Pet).%New()
+    Do messageRequest.body1.%JSONImport({"id":123,"name":"Kitty Galore","photoUrls":["https://www.tippett.com/wp-content/uploads/2017/01/ca2DC049.130.1264.jpg"],"status":"pending"})
+    
     Set sc = ##class(petshop.Utils).invokeHostSync("petshop.bp.SyncProcess", messageRequest, "petshop.bs.ProxyService", , .pResponse)
+    
     If $$$ISERR(sc) Do $SYSTEM.Status.DisplayError(sc)
+    
     Return sc
 }
 
@@ -73,8 +78,6 @@ ClassMethod findPetsByStatus(status As %String = "availalbe") As %Status
         }
     }
 
-
-
     Quit sc
 }
 
@@ -102,17 +105,6 @@ ClassMethod findPetUsingHttpClient(status As %String = "availalbe") As %Status
     }
 
     Quit sc
-}
-
-ClassMethod RemoveRequired(class, property) As %Status
-{
-    Set sc = $$$OK
-    Set propDef = ##class(%Dictionary.PropertyDefinition).%OpenId(class _ "||" _property,,.sc)
-    Quit:$$$ISERR(sc)
-    Set propDef.Required = $$$NO
-    Set sc = propDef.%Save()
-    Do $SYSTEM.OBJ.Compile(class,"ck")
-    Quit
 }
 
 }
