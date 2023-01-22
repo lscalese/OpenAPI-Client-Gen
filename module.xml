@@ -4,7 +4,7 @@
     <Module>
       <Name>openapi-client-gen</Name>
       <Description>IRIS Interoperability Production generator from OpenAPI specification.</Description>
-      <Version>2.0.1</Version>
+      <Version>2.0.2</Version>
       <Packaging>module</Packaging>
       <Dependencies>
         <ModuleReference>
