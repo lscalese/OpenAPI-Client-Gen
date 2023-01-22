@@ -13,23 +13,11 @@
         </ModuleReference>
         <ModuleReference>
           <Name>openapi-common-lib</Name>
-          <Version>0.0.1</Version>
+          <Version>0.0.4</Version>
         </ModuleReference>
         <ModuleReference>
           <Name>sslclient</Name>
           <Version>1.0.1</Version>
-        </ModuleReference>
-        <ModuleReference>
-          <Name>yaml-utils</Name>
-          <Version>0.1.1</Version>
-        </ModuleReference>
-        <ModuleReference>
-          <Name>swagger-converter-cli</Name>
-          <Version>0.0.2</Version>
-        </ModuleReference>
-        <ModuleReference>
-          <Name>swagger-validator-cli</Name>
-          <Version>0.0.1</Version>
         </ModuleReference>
       </Dependencies>
       <SourcesRoot>src</SourcesRoot>
