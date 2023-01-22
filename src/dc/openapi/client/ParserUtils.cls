@@ -1,4 +1,4 @@
-Include dc.openapi.client.macro
+Include (dc.openapi.client.macro, dc.openapi.common.macro)
 
 Class dc.openapi.client.ParserUtils
 {

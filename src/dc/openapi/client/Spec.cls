@@ -1,4 +1,4 @@
-Include dc.openapi.client.macro
+Include dc.openapi.common.macro
 
 Class dc.openapi.client.Spec Extends %RegisteredObject
 {

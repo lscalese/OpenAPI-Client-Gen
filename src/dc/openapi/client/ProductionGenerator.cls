@@ -1,6 +1,6 @@
-Include dc.openapi.client.macro
+Include dc.openapi.common.macro
 
-Class dc.openapi.client.ProductionGenerator Extends %RegisteredObject
+Class dc.openapi.client.ProductionGenerator Extends (%RegisteredObject, dc.openapi.common.Generator)
 {
 
 Parameter PKGSERVICES = "bs";
@@ -9,51 +9,17 @@ Parameter PKGOPERATION = "bo";
 
 Parameter PKGPROCESS = "bp";
 
-Property spec As %DynamicObject;
-
-Property application As %String;
-
 Property productionClassName As %String [ InitialExpression = "Production" ];
 
 Property tmp As %Binary [ MultiDimensional ];
-
-ClassMethod zTest()
-{
-    ; zw ##class(dc.openapi.client.ProductionGenerator).zTest()
-    ; do $SYSTEM.OBJ.CompileAll("ztestclient")
-
-    Do $SYSTEM.OBJ.DeletePackage("ztestclient")
-
-    TStart
-    Set specification = {}.%FromJSON(##class(%Dictionary.CompiledXData).%OpenId("petshop.model.spec||OpenAPI").Data)
-    Set generator = ##class(dc.openapi.client.ProductionGenerator).%New(specification, "ztestclient")
-    Quit generator.Generate()
-}
-
-ClassMethod testf()
-{
-    /*
-    Set ensRequest = ##class(ztestclient.requests.getPetById).%New()
-    Set ensRequest.%Consume = "application/json"
-    Set ensRequest.pathpetId=1
-    ;Set pResponse = ##class(ztestclient.responses.getPetById).%New()
-    Set sc = ##class(ztestclient.Utils).invokeHostSync("ztestclient.bp.SyncProcess", ensRequest, "ztestclient.bs.ProxyService", , .pResponse)
-    q pResponse
-    */
-
-    Set ensRequest = ##class(ztestclient.requests.findPetsByStatus).%New()
-    Set ensRequest.%Consume = "application/json"
-    Set ensRequest.querystatus = "available"
-    Set sc = ##class(ztestclient.Utils).invokeHostSync("ztestclient.bp.SyncProcess", ensRequest, "ztestclient.bs.ProxyService", , .pResponse)
-    q pResponse
-    zw sc
-    q
-}
 
 Method %OnNew(specification As %DynamicObject, application As %String) As %Status
 {
     Set ..spec = specification
     Set ..application = application
+    Set ..packageModel = ..application _ "." _ ..#PKGMODEL
+    Set ..packageRequest = ..application _ "." _..#PKGREQUEST
+    Set ..superRequest = "Ens.Request"
     Quit $$$OK
 }
 
@@ -62,7 +28,7 @@ Method Generate() As %Status
     Set sc = $$$OK
     
     Set httpClientGenerator = ##class(dc.openapi.client.HttpClientGenerator).%New(..spec, ..application)
-    Set httpClientGenerator.superRequest = "Ens.Request"
+    Set httpClientGenerator.superRequest = ..superRequest
     Set httpClientGenerator.superResponse = ..application _ "." _..PackageResponse() _  ".GenericResponse" ;",Ens.Response"
     Set httpClientGenerator.superModel = "%Persistent,%JSON.Adaptor,%XML.Adaptor"
     Set httpClientGenerator.superGenericResponse = "%Persistent,Ens.Response"
@@ -97,7 +63,7 @@ Method Generate() As %Status
     Set sc = $$$ADDSC(sc, ..GenerateMessageMap())
 
     ; Force model with MAXLEN = ""
-    Set sc = $$$ADDSC(sc, ..ForceNotDefinedMAXLEN( ..application _ ".model"))
+    Set sc = $$$ADDSC(sc, ##class(dc.openapi.common.Utils).ForceNotDefinedMAXLEN( ..application _ ".model"))
 
     Quit sc
 }
@@ -153,46 +119,17 @@ Method GenerateBusinessService(path As %String, pathItem As %DynamicObject, meth
 
 ClassMethod PackageModel() As %String [ CodeMode = expression ]
 {
-##class(dc.openapi.client.HttpClientGenerator).%GetParameter("PKGMODEL")
+..#PKGMODEL
 }
 
 ClassMethod PackageRequest() As %String [ CodeMode = expression ]
 {
-##class(dc.openapi.client.HttpClientGenerator).%GetParameter("PKGREQUEST")
+..#PKGREQUEST
 }
 
 ClassMethod PackageResponse() As %String [ CodeMode = expression ]
 {
 ##class(dc.openapi.client.HttpClientGenerator).%GetParameter("PKGRESPONSE")
-}
-
-/// Helper to iterate operation object<br/>
-/// the callback must be method with the parameters<br/>
-/// (path As %String, pathItem As %DynamicObject, method As %String, operation As %DynamicObject)<br/>
-Method IterateOnOperation(callBackMethod As %String) As %Status [ Private ]
-{
-    Set sc = $$$OK
-
-    Quit:'..spec.%IsDefined("paths") sc
-
-    Set pathIterator = ..spec.paths.%GetIterator()
-
-    While pathIterator.%GetNext(.path, .pathItem) {
-        
-        Continue:'$IsObject(pathItem)
-
-        For method = "get", "put", "post", "delete", "options", "head", "patch", "trace" {
-            
-            Set operation = pathItem.%Get(method)
-            Continue:'$IsObject(operation)
-            
-            Set sc = $$$ADDSC(sc, $METHOD(##this, callBackMethod, path, pathItem, method, operation) )
-
-        }
-
-    }
-
-    Quit sc
 }
 
 /// Generate Generic Business Process classes<br/>
@@ -450,36 +387,6 @@ Method GenerateMessageMap() As %Status [ Private ]
 
     Do cDef.XDatas.Insert(xData)
     Return cDef.%Save()
-}
-
-ClassMethod ForceNotDefinedMAXLEN(package As %String, maxLenValue As %String = "") As %Status
-{
-    #dim propDef As %Dictionary.PropertyDefinition
-    Set sc = $$$OK, (startKey, className) = package _"."
-    
-    For  {
-        Set className = $Order(^oddDEF(className))
-        Quit:$Extract(className, 1, $LENGTH(startKey))'=startKey
-
-        Set classDef = ##class(%Dictionary.ClassDefinition).%OpenId(className,, .scO)
-        If $$$ISERR(sc) {
-            Set sc = $$$ADDSC(sc, scO)
-            Continue
-        }
-
-        Set key = ""
-        For  {
-            Set propDef = classDef.Properties.GetNext(.key)
-            Quit:key=""
-            If "%String,%Library.String,%VarString"[propDef.Type, propDef.Parameters.GetAt("MAXLEN") = "" {
-                $$$zlog("Force " _ className _" " _ propDef.Name _" with MAXLEN=" _ maxLenValue)
-                Do propDef.Parameters.SetAt(maxLenValue, "MAXLEN")
-                Set sc = $$$ADDSC(sc, propDef.%Save()) 
-            }
-        }
-    }
-
-    Quit sc
 }
 
 XData ProductionDefinitionTemplate
