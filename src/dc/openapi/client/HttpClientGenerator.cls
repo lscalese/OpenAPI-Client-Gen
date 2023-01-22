@@ -43,7 +43,8 @@ Method GenerateClient() As %Status
     Set sc = $$$ADDSC(sc, ..IterateOnOperation("GenerateLoadHttpRequestObject"))
 
     ; Generate load from %request method
-    Set sc = $$$ADDSC(sc, ..IterateOnOperation("GenerateLoadFromRequestMethod"))
+    ; moved to openapi-server-gen project
+    ; Set sc = $$$ADDSC(sc, ..IterateOnOperation("GenerateLoadFromRequestMethod"))
 
     ; Generate Response Classes
     Set sc = $$$ADDSC(sc, ..IterateOnOperation("GenerateResponseClass"))
@@ -112,7 +113,7 @@ Method GenerateLoadHttpRequestObject(path As %String, pathItem As %DynamicObject
 
         ; parameter is a parameter object https://swagger.io/specification/#parameter-object
         
-        Set:parameter."$ref"'="" parameter = ##class(dc.openapi.client.ParserUtils).GetObjectByRef(..spec, parameter."$ref", .name)
+        Set:parameter."$ref"'="" parameter = ##class(dc.openapi.common.Utils).GetObjectByRef(..spec, parameter."$ref", .name)
         
         Continue:'$IsObject(parameter)
         Continue:parameter.name=""
@@ -272,174 +273,6 @@ Method GenerateLoadHttpRequestObject(path As %String, pathItem As %DynamicObject
     Quit sc
 }
 
-Method GenerateLoadFromRequestMethod(path As %String, pathItem As %DynamicObject, method As %String, operation As %DynamicObject) As %Status
-{
-    Set sc = $$$OK
-    #dim propDef As %Dictionary.PropertyDefinition
-    Set sc = $$$OK
-
-    Do ..CheckAndGenerateOperationId(method, .operation, path)
-
-    Set className = ..packageRequest _ "." _ $$$zNormalizeClassName(operation.operationId)
-
-    Set classDef = ##class(%Dictionary.ClassDefinition).%OpenId(className,,.sc)
-
-    If $$$ISERR(sc) {
-        $$$zlog($Char(9) _"+ Can't add LoadFromRequest method to  " _ className _ "(class definition does not exist)")
-        Quit sc
-    }
-
-    $$$zlog($Char(9) _"+ Add LoadFromRequest method to  " _ className)
-
-    Set methodDef = ##class(%Dictionary.MethodDefinition).%New()
-    Set methodDef.Name = "LoadFromRequest"
-    Set methodDef.Description = "Load object properties from %CSP.Request object."
-    Set methodDef.FormalSpec = "request:%CSP.Request=%request"
-    Set methodDef.ClassMethod = $$$NO
-    Set methodDef.ReturnType = "%Status"
-    Do classDef.Methods.Insert(methodDef)
-    Do methodDef.Implementation.WriteLine( $Char(9) _ "Set sc = $$$OK")
-
-    Do methodDef.Implementation.WriteLine( $Char(9) _ "Set ..%ContentType = $Piece(request.ContentType, "";"", 1)")
-    
-    Set parameters = ..GetOperationParameters(pathItem, operation)
-
-    Set parameterIterator = parameters.%GetIterator()
-    While parameterIterator.%GetNext(.key, .parameter) {
-
-        ; parameter is a parameter object https://swagger.io/specification/#parameter-object
-        
-        Set:parameter."$ref"'="" parameter = ##class(dc.openapi.client.ParserUtils).GetObjectByRef(..spec, parameter."$ref", .name)
-        
-        Continue:'$IsObject(parameter)
-        Continue:parameter.name=""
-        Continue:parameter.in=""
-
-        Set propDef = $$$FindPropertyName(classDef, $$$NormalizePropertyParamName(parameter.in_parameter.name))
-        If '$IsObject(propDef) {
-            Set errMsg = $$$FormatText("Property definition %1 not found in class %2", parameter.in_parameter.name, classDef.Name)
-            $$$zlog($Char(9) _ "! " _ errMsg)
-            Set sc = $$$ADDSC(sc, $$$ERROR(5001, errMsg))
-            Continue
-        }
-
-        Set parameterPropertyName = $$$CodeNormalizeProperty($$$NormalizePropertyParamName(parameter.in_parameter.name))
-
-        If parameter.in = "header" {
-            Do methodDef.Implementation.WriteLine( $Char(9) _ "Set .." _ parameterPropertyName _ " = $Get(request.GetCgiEnv(""HTTP_" _ $ZCVT(parameter.name,"U") _ """))" )
-        } ElseIf parameter.in = "path" {
-            ; Must be managed out of this method.
-            Do methodDef.Implementation.WriteLine( $Char(9) _ ";" _ parameterPropertyName _ " must be set out of this method")
-        } ElseIf parameter.in = "query" {
-            If propDef.Collection '= "" {
-                Do methodDef.Implementation.WriteLine( $Char(9) _ "Set key = """"")
-                Do methodDef.Implementation.WriteLine( $Char(9) _ "For  {")
-                Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Set key = $Order(request.Data(""" _ parameter.name _""", key), 1, tmpValue)")
-                Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Quit:key=""""")
-                Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Do .." _ parameterPropertyName _ ".Insert(tmpValue)")
-                Do methodDef.Implementation.WriteLine( $Char(9) _ "}")
-            } Else {
-                Do methodDef.Implementation.WriteLine( $Char(9) _ "Set .." _ parameterPropertyName _ " = $Get(request.Data(""" _ parameter.name _""",1))" )
-            }
-        }
-
-    }
-
-    If '$ISOBJECT(operation.requestBody) {
-        Do methodDef.Implementation.WriteLine( $Char(9) _ "Quit sc")
-        Quit $$$ADDSC(sc, classDef.%Save())
-    }
-
-    Set bodyContentIterator = operation.requestBody.content.%GetIterator()
-    
-    
-
-    While bodyContentIterator.%GetNext(.contentType, .contentTypeItem) {
-        
-        Continue:'$IsObject(contentTypeItem.schema)
-
-        Set condition = $$$FormatText("If ..%ContentType = ""%1""", $$$LOWER(contentType))
-        
-        If 'contentTypeItem.%IsDefined("schema") {
-            Set:'$Data(tmp(0),propertyName) propertyName = $$$NormalizePropertyParamName("body") _ $INCREMENT(body)
-            Continue
-        }
-        
-        Set hash = $ZCRC(contentTypeItem.schema.%ToJSON(), 7)
-        
-        Set:'$Data(tmp(hash),propertyName) propertyName = $$$NormalizePropertyParamName("body") _ $INCREMENT(body), tmp(hash) = propertyName
-
-        Set propDef = $$$FindPropertyName(classDef, $$$NormalizePropertyParamName(propertyName))
-        If '$IsObject(propDef) {
-            Set errMsg = $$$FormatText("Property definition %1 not found in class %2", propertyName, classDef.Name)
-            $$$zlog($Char(9) _ "! " _ errMsg)
-            Set sc = $$$ADDSC(sc, $$$ERROR(5001, errMsg))
-            Continue
-        }
-
-        If $$$LOWER(contentType) [ "application/json" {
-            If propDef.Collection '= "" {
-                Do methodDef.Implementation.WriteLine( $Char(9) _ condition _ "{")
-                Do methodDef.Implementation.WriteLine( "" )
-                Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Set key = """", array = [].%FromJSON(request.Content), iterator = array.%GetIterator()")
-                Do methodDef.Implementation.WriteLine( $Char(9,9) _ "While iterator.%GetNext(.index, .item) {")
-                Do methodDef.Implementation.WriteLine( $Char(9,9,9) _ $$$FormatText("Set tmpObject = ##class(%1).%New()", propDef.Type ))
-                Do methodDef.Implementation.WriteLine( $Char(9,9,9) _ "Do tmpObject.%JSONImport(item)")
-                Do methodDef.Implementation.WriteLine( $Char(9,9,9) _ "Do .." _ $$$CodeNormalizeProperty(propDef.Name)_".Insert(tmpObject)")
-                Do methodDef.Implementation.WriteLine( $Char(9,9) _ "}")
-                Do methodDef.Implementation.WriteLine( $Char(9) _ "}")
-            } Else {
-                Do methodDef.Implementation.WriteLine( $Char(9) _ condition _ "{")
-                Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Set .." _ $$$CodeNormalizeProperty(propDef.Name)_" = " _ $$$FormatText("##class(%1).%New()", propDef.Type ))
-                Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Do .." _ $$$CodeNormalizeProperty(propDef.Name) _ ".%JSONImport(request.Content)")
-                Do methodDef.Implementation.WriteLine( $Char(9) _ "}" )
-            }
-
-        } ElseIf ($$$LOWER(contentType) [ "multipart/form-data") {
-            
-            Do methodDef.Implementation.WriteLine( $Char(9) _ condition _ "{")
-
-            If propDef.Type = "%Stream.GlobalBinary" {
-                ;Do methodDef.Implementation.WriteLine( $Char(9,9) _ "")
-                Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Set mime = request.GetMimeData(""" _ propertyName _ """)")
-                Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Do:$IsObject(mime) .." _ $$$CodeNormalizeProperty(propertyName) _ ".CopyFrom(mime)")
-            } Else {
-                ; todo ...
-                Do methodDef.Implementation.WriteLine( $Char(9,9) _ "; To implement.  There is no code generation yet for this case.")
-                Do methodDef.Implementation.WriteLine( $Char(9,9) _ "$$$ThrowStatus($$$ERROR($$$NotImplemented))")
-            }
-
-            Do methodDef.Implementation.WriteLine( $Char(9) _ "}")
-        
-        } ElseIf $$$LOWER(contentType) [ "application/octet-stream" {
-            Do methodDef.Implementation.WriteLine( $Char(9) _ condition _ "{")
-
-            If propDef.Type = "%Stream.GlobalBinary" {
-                Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Do .." _ $$$CodeNormalizeProperty(propDef.Name) _ ".CopyFrom(request.Content)" )
-            } Else {
-                
-                Do methodDef.Implementation.WriteLine( $Char(9,9) _ "; To implement.  There is no code generation for this case.")
-                Do methodDef.Implementation.WriteLine( $Char(9,9) _ "$$$ThrowStatus($$$ERROR($$$NotImplemented))")
-            }
-
-            Do methodDef.Implementation.WriteLine( $Char(9) _ "}")
-
-        } Else {
-            Do methodDef.Implementation.WriteLine( $Char(9) _ condition _" {")
-            Do methodDef.Implementation.WriteLine( $Char(9,9) _ "; To implement.  There is no code generation yet for this case.")
-            Do methodDef.Implementation.WriteLine( $Char(9,9) _ "$$$ThrowStatus($$$ERROR($$$NotImplemented))")
-            Do methodDef.Implementation.WriteLine( $Char(9) _ "}")
-        }
-        
-    }
-
-    Do methodDef.Implementation.WriteLine( $Char(9) _ "Quit sc")
-
-    Set sc = classDef.%Save()
-
-    Quit sc
-}
-
 Method httpClientClass() As %Status [ Private ]
 {
     #dim sc As %Status = $$$OK
@@ -564,10 +397,10 @@ Method GenerateResponseClass(path As %String, pathItem As %DynamicObject, method
         While contentTypeIterator.%GetNext(.contentType, .contentTypeItem) {
             
             If contentTypeItem.schema.%IsDefined("$ref") {
-                Set ref = ##class(dc.openapi.client.ParserUtils).GetObjectByRef(..spec, contentTypeItem.schema."$ref", .refName)
+                Set ref = ##class(dc.openapi.common.Utils).GetObjectByRef(..spec, contentTypeItem.schema."$ref", .refName)
                 Set k1 = ..packageModel_"."_ $$$zNormalizeClassName(refName)
                 If ref.type = "array" {
-                    Set ref = ##class(dc.openapi.client.ParserUtils).GetObjectByRef(..spec, ref.items."$ref", .refName)
+                    Set ref = ##class(dc.openapi.common.Utils).GetObjectByRef(..spec, ref.items."$ref", .refName)
                     Set propertyToGen(k1, 1) = "ListOf" _ $$$zNormalizeClassName(refName)
                     Set propertyToGen(k1, 1, "description") = $Get(propertyToGen(k1, 1, "description"))
                         _ "http status code = "_code _" content-type = " _contentType_$c(13,10)
@@ -577,7 +410,7 @@ Method GenerateResponseClass(path As %String, pathItem As %DynamicObject, method
                         _ "http status code = "_code _" content-type = " _contentType_$c(13,10)
                 }
             } ElseIf contentTypeItem.schema.type = "array" {
-                Set ref = ##class(dc.openapi.client.ParserUtils).GetObjectByRef(..spec, contentTypeItem.schema.items."$ref", .refName)
+                Set ref = ##class(dc.openapi.common.Utils).GetObjectByRef(..spec, contentTypeItem.schema.items."$ref", .refName)
                 Set k1 = ..packageModel_"."_ $$$zNormalizeClassName(refName)
                 Set propertyToGen(k1, 1) = "ListOf" _$$$zNormalizeClassName(refName)
                 Set propertyToGen(k1, 1, "description") = $Get(propertyToGen(k1, 1, "description"))
@@ -646,7 +479,7 @@ Method GenerateLoadFromResponse(path As %String, pathItem As %DynamicObject, met
         While contentTypeIterator.%GetNext(.contentType, .contentTypeItem) {
             
             If contentTypeItem.schema.%IsDefined("$ref") {
-                Set ref = ##class(dc.openapi.client.ParserUtils).GetObjectByRef(..spec, contentTypeItem.schema."$ref", .refName)
+                Set ref = ##class(dc.openapi.common.Utils).GetObjectByRef(..spec, contentTypeItem.schema."$ref", .refName)
                 Set k1 = ..packageModel_"."_ $$$zNormalizeClassName(refName)
                 If ref.type = "array" {
                     Do methodDef.Implementation.WriteLine( $Char(9) _ "If $$$LOWER($Piece(httpResponse.ContentType,"";"",1))=""" _ contentType _ """,httpResponse.StatusCode = """ _ code _ """ {")
@@ -665,7 +498,7 @@ Method GenerateLoadFromResponse(path As %String, pathItem As %DynamicObject, met
                     Do methodDef.Implementation.WriteLine( $Char(9) _ "}")
                 }
             } ElseIf contentTypeItem.schema.type = "array" {
-                Set ref = ##class(dc.openapi.client.ParserUtils).GetObjectByRef(..spec, contentTypeItem.schema.items."$ref", .refName)
+                Set ref = ##class(dc.openapi.common.Utils).GetObjectByRef(..spec, contentTypeItem.schema.items."$ref", .refName)
                 Set k1 = ..packageModel_"."_ $$$zNormalizeClassName(refName)
                 
                 Do methodDef.Implementation.WriteLine( $Char(9) _ "If $$$LOWER($Piece(httpResponse.ContentType,"";"",1))=""" _ contentType _ """,httpResponse.StatusCode = """ _ code _ """ {")
