@@ -20,7 +20,7 @@ ClassMethod generateApp(appName As %String, spec, features As %Binary) As %Statu
 
     Set sc = $$$OK
     
-    Set spec = ##class(dc.openapi.client.common.SpecificationLoader).AbstractSpecLoader(spec, .sc)
+    Set spec = ##class(dc.openapi.common.SpecificationLoader).AbstractSpecLoader(spec, .sc)
     Quit:$$$ISERR(sc) sc
 
     Return ..%CreateClientApplication(appName, spec, .features)
