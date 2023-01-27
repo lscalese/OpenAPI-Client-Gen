@@ -204,26 +204,3 @@ Set sc = ##class(dc.openapi.client.Spec).%CreateClientApplication(appName, spec,
 Do $SYSTEM.OBJ.ExportPackageToStream(appName, .xmlStream)
 TROLLBACK ; Code has been exported to xmlStream, a simple TROLLBACK delete all generated definition in code database.
 ```
-
-## REST Api
-
-A REST Api is also available for upload swagger specification document and download all generated classes to xml format.  
-You can easily test it with swagger-ui tools:  
-
-* Open swagger-ui : http://localhost:52795/swagger-ui/index.html  (swagger-ui package is required : `zpm "install swagger-ui"`)
-* Explore : http://localhost:52795/swaggerclientgen/api/_spec
-* Select schemes http.  
-* In the body parameter, put your OpenAPI specification on json format or an url to download the json file.
-* Click execute and then download.  
-
-<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/Swagger-ui-1.png">
-
-Or use the basic embedded form at : http://localhost:52795/csp/swaggerclientgen/dc.openapi.client.api.cspdemo.cls
-
-<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/basic-form.png">
-
-## Prerequisites
-Make sure you have [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) and [Docker desktop](https://www.docker.com/products/docker-desktop) installed.
-
-
-<img width="1123" src="https://raw.githubusercontent.com/lscalese/OpenAPI-Client-Gen/master/assets/how-to.gif">
