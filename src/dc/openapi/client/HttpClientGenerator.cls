@@ -42,10 +42,6 @@ Method GenerateClient() As %Status
     ; Add LoadHttpRequestObject method to request classes
     Set sc = $$$ADDSC(sc, ..IterateOnOperation("GenerateLoadHttpRequestObject"))
 
-    ; Generate load from %request method
-    ; moved to openapi-server-gen project
-    ; Set sc = $$$ADDSC(sc, ..IterateOnOperation("GenerateLoadFromRequestMethod"))
-
     ; Generate Response Classes
     Set sc = $$$ADDSC(sc, ..IterateOnOperation("GenerateResponseClass"))
 
@@ -57,6 +53,8 @@ Method GenerateClient() As %Status
 
     ; Generate HttpClient class
     Set sc = $$$ADDSC(sc, ..httpClientClass())
+
+    Set sc = $$$ADDSC(sc, ##class(dc.openapi.common.Utils).ForceNotDefinedMAXLEN( ..application _ ".model"))
     
     Quit sc
 }

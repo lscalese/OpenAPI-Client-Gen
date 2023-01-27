@@ -62,8 +62,9 @@ Method Generate() As %Status
     
     Set sc = $$$ADDSC(sc, ..GenerateMessageMap())
 
-    ; Force model with MAXLEN = ""
-    Set sc = $$$ADDSC(sc, ##class(dc.openapi.common.Utils).ForceNotDefinedMAXLEN( ..application _ ".model"))
+
+    ; Force model with MAXLEN = "" --> moved to HttpClientGenerator
+    ; Set sc = $$$ADDSC(sc, ##class(dc.openapi.common.Utils).ForceNotDefinedMAXLEN( ..application _ ".model"))
 
     Quit sc
 }
