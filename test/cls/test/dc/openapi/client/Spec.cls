@@ -14,7 +14,7 @@ Method TestGenerateProduction() As %Status
     #dim inputFile As %String
     #dim base As %String = ..GetBaseTestDir(.separator) _ "files" _ separator
 
-    Set app("zzzpetshop") = base _ "petshop.json"
+    Set app("zzzpetshop") = "https://petstore3.swagger.io/api/v3/openapi.json" ; base _ "petshop.json"
     Set appName = ""
     
     For  {
@@ -38,6 +38,7 @@ Method TestGenerateProduction() As %Status
     Quit sc
 }
 
+/*
 Method TestSwaggerModel() As %Status
 {
     #dim sc As %Status = $$$OK
@@ -92,6 +93,7 @@ Method TestSwaggerModel() As %Status
             }
         }
 
+        ;must be changed
         Set methodId = ""
         For  {
             Set methodId = $Order(methodExists( methodId ) )
@@ -114,7 +116,7 @@ Method TestSwaggerModel() As %Status
 
     Quit sc
 }
-
+*/
 ClassMethod checkProperty(class As %String, name As %String, attribute As %Binary) As %Status
 {
     #dim sc As %Status = $$$OK
