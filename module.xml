@@ -4,7 +4,7 @@
     <Module>
       <Name>openapi-client-gen</Name>
       <Description>IRIS Interoperability Production generator from OpenAPI specification.</Description>
-      <Version>2.0.4</Version>
+      <Version>2.0.5</Version>
       <Packaging>module</Packaging>
       <Dependencies>
         <ModuleReference>
@@ -21,31 +21,8 @@
         </ModuleReference>
       </Dependencies>
       <SourcesRoot>src</SourcesRoot>
-      <Resource Name="dc.openapi.client.PKG"/>
-      <CSPApplication 
-            SourcePath="/web"
-            DeployPath="${cspdir}/swaggerclientgen/api"
-            Url="/swaggerclientgen/api" 
-            CookiePath="/swaggerclientgen/api/"
-            PasswordAuthEnabled="1"
-            AuthenticationMethods="64" 
-            Recurse="1"
-            MatchRoles=":%DB_${Namespace}"
-            DispatchClass="dc.openapi.client.api.disp"/>
-      
-      <CSPApplication
-            SourcePath="/web"
-            DeployPath="${cspdir}/swaggerclientgen/api"
-            Url="/csp/swaggerclientgen"
-            CookiePath="/csp/swaggerclientgen/"
-            ServeFiles="1"
-            PasswordAuthEnabled="1"
-            AuthenticationMethods="64" 
-            MatchRoles=":%DB_${Namespace}"
-            Recurse="1"/>
-      
+      <Resource Name="dc.openapi.client.PKG"/>      
       <UnitTest Name="/test/cls" Package="test.dc.openapi.client" Phase="test" />
-
       <SystemRequirements Version=">=2020.1" Interoperability="enabled" />
     </Module>
   </Document>
