@@ -25,10 +25,8 @@ ClassMethod addPet() As %Status
 {
     Set sc = $$$OK
     Set messageRequest = ##class(petshop.requests.addPet).%New()
-    Set messageRequest.%ContentType = "application/json"
-    
-    Set messageRequest.body1 = ##class(petshop.model.Pet).%New()
-    Do messageRequest.body1.%JSONImport({"id":123,"name":"Kitty Galore","photoUrls":["https://www.tippett.com/wp-content/uploads/2017/01/ca2DC049.130.1264.jpg"],"status":"pending"})
+    Set messageRequest.%ContentType = "application/json"    
+    Do messageRequest.PetNewObject().%JSONImport({"id":123,"name":"Kitty Galore","photoUrls":["https://www.tippett.com/wp-content/uploads/2017/01/ca2DC049.130.1264.jpg"],"status":"pending"})
     
     Set sc = ##class(petshop.Utils).invokeHostSync("petshop.bp.SyncProcess", messageRequest, "petshop.bs.ProxyService", , .pResponse)
     
@@ -40,9 +38,9 @@ ClassMethod addPet() As %Status
 ClassMethod addPetSimpleClient() As %Status
 {
     Set sc = $$$OK
-    Set messageRequest = ##class(petshop.requests.addPet).%New(), messageRequest.body1 = ##class(petshop.model.Pet).%New()
+    Set messageRequest = ##class(petshop.requests.addPet).%New()
     Set messageRequest.%ContentType = "application/json"
-    Do messageRequest.body1.%JSONImport({"id":123,"name":"Kitty Galore","photoUrls":["ttps://www.tippett.com/wp-content/uploads/2017/01/ca2DC049.130.1264.jpg"],"status":"pending"})
+    Do messageRequest.PetNewObject().%JSONImport({"id":123,"name":"Kitty Galore","photoUrls":["ttps://www.tippett.com/wp-content/uploads/2017/01/ca2DC049.130.1264.jpg"],"status":"pending"})
     Set httpClient = ##class(petshop.HttpClient).%New("https://petstore3.swagger.io/api/v3","DefaultSSL")
     Set sc = httpClient.addPet(messageRequest, .messageResponse)
     If $$$ISERR(sc) Do $SYSTEM.Status.DisplayError(sc) Quit sc
@@ -119,7 +117,7 @@ ClassMethod uploadFile(filePath As %String = "/home/irisowner/irisdev/assets/Tip
     Set messageRequest.%ContentType = "application/octet-stream"
     Set messageRequest.%Consume = "application/json"
     Set messageRequest.pathpetId = 123
-    Do messageRequest.body1.CopyFrom(fileBinary)
+    Do messageRequest.body.CopyFrom(fileBinary)
 
     Set sc = ##class(petshop.Utils).invokeHostSync("petshop.bp.SyncProcess", messageRequest, "petshop.bs.ProxyService", , .messageResponse)
 
