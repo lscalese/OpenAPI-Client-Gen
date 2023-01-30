@@ -13,7 +13,7 @@
         </ModuleReference>
         <ModuleReference>
           <Name>openapi-common-lib</Name>
-          <Version>0.0.9</Version>
+          <Version>0.0.10</Version>
         </ModuleReference>
         <ModuleReference>
           <Name>sslclient</Name>
