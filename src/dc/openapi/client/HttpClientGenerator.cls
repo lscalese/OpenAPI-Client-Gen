@@ -395,6 +395,8 @@ Method GenerateResponseClass(path As %String, pathItem As %DynamicObject, method
         Set contentTypeIterator = codeItem.content.%GetIterator()
         While contentTypeIterator.%GetNext(.contentType, .contentTypeItem) {
             
+            Continue:'contentTypeItem.%IsDefined("schema")
+
             If contentTypeItem.schema.%IsDefined("$ref") {
                 Set ref = ##class(dc.openapi.common.Utils).GetObjectByRef(..spec, contentTypeItem.schema."$ref", .refName)
                 Set k1 = ..packageModel_"."_ $$$zNormalizeClassName(refName)
@@ -477,6 +479,8 @@ Method GenerateLoadFromResponse(path As %String, pathItem As %DynamicObject, met
         Set contentTypeIterator = codeItem.content.%GetIterator()
         While contentTypeIterator.%GetNext(.contentType, .contentTypeItem) {
             
+            continue:'contentTypeItem.%IsDefined("schema")
+
             If contentTypeItem.schema.%IsDefined("$ref") {
                 Set ref = ##class(dc.openapi.common.Utils).GetObjectByRef(..spec, contentTypeItem.schema."$ref", .refName)
                 Set k1 = ..packageModel_"."_ $$$zNormalizeClassName(refName)
