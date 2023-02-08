@@ -409,7 +409,11 @@ Method GenerateResponseClass(path As %String, pathItem As %DynamicObject, method
                     Set propertyToGen(k1, 0) = $$$zNormalizeClassName(refName)
                     Set propertyToGen(k1, 0, "description") = $Get(propertyToGen(k1, 0, "description"))
                         _ "http status code = "_code _" content-type = " _contentType_$c(13,10)
+                    Set:$IsObject(ref.xml)&&(ref.xml.name'="") propertyToGen(k1, 0, "XMLNAME") = $Translate(ref.xml.name,"#%/\","")
                 }
+
+                
+
             } ElseIf contentTypeItem.schema.type = "array" {
                 Set ref = ##class(dc.openapi.common.Utils).GetObjectByRef(..spec, contentTypeItem.schema.items."$ref", .refName)
                 Set k1 = ..packageModel_"."_ $$$zNormalizeClassName(refName)
@@ -434,6 +438,7 @@ Method GenerateResponseClass(path As %String, pathItem As %DynamicObject, method
             Set propDef.Type = key
             Set propDef.Description = $Get(propertyToGen(key, i, "description"))
             Set:i=1 propDef.Collection = "list"
+            Do:$Data(propertyToGen(key, i, "XMLNAME"),xmlName) propDef.Parameters.SetAt(xmlName, "XMLNAME")
             $$$zlog($Char(9) _ "+ Add property " _ propertyName)
             Do classDef.Properties.Insert(propDef)
 
@@ -494,6 +499,20 @@ Method GenerateLoadFromResponse(path As %String, pathItem As %DynamicObject, met
                     If contentType = "application/json" {
                         Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Set .." _ $$$zNormalizeClassName(refName) _ " = ##class("_k1 _").%New()")
                         Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Do .." _ $$$zNormalizeClassName(refName) _ ".%JSONImport(httpResponse.Data)")
+                        Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Return sc")
+                    } ElseIf contentType = "application/xml" {
+                        Set xmlTagName = refName
+                        
+                        If $IsObject(ref.xml), ref.xml.name '= "" {
+                            Set xmlTagName = $Translate(ref.xml.name,"#%/\","")
+                        }
+
+                        Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Set reader = ##class(%XML.Reader).%New()" )
+                        Do methodDef.Implementation.WriteLine( $Char(9,9) _ "$$$QuitOnError(reader.OpenStream(httpResponse.Data))")
+                        Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Do reader.Correlate(""" _ xmlTagName _ """,""" _ k1 _""")" )
+                        Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Do reader.Next(." _ $$$zNormalizeClassName(refName) _ ", .sc)" )
+                        Do methodDef.Implementation.WriteLine( $Char(9,9) _ "If $$$ISERR(sc) Quit sc" )
+                        Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Set .." _ $$$zNormalizeClassName(refName) _ " = " _ $$$zNormalizeClassName(refName) )
                         Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Return sc")
                     } Else {
                         Do methodDef.Implementation.WriteLine( $Char(9,9) _ "$$$ThrowStatus($$$ERROR($$$NotImplemented))")
