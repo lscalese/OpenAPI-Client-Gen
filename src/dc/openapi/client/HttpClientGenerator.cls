@@ -531,6 +531,20 @@ Method GenerateLoadFromResponse(path As %String, pathItem As %DynamicObject, met
                     Do methodDef.Implementation.WriteLine( $Char(9,9,9) _ "Do obj.%JSONImport(item), ..ListOf" _ $$$zNormalizeClassName(refName) _ ".Insert(obj)")
                     Do methodDef.Implementation.WriteLine( $Char(9,9) _ "}")
                     Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Return sc")
+                } ElseIf contentType = "application/xml" {
+                        
+                        Set xmlTagName = refName
+                        
+                        If $IsObject(ref.xml), ref.xml.name '= "" Set xmlTagName = $Translate(ref.xml.name,"#%/\","")
+
+                        Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Set reader = ##class(%XML.Reader).%New()" )
+                        Do methodDef.Implementation.WriteLine( $Char(9,9) _ "$$$QuitOnError(reader.OpenStream(httpResponse.Data))")
+                        Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Do reader.Correlate(""" _ xmlTagName _ """,""" _ k1 _""")" )
+                        Do methodDef.Implementation.WriteLine( $Char(9,9) _ "While reader.Next(." _ $$$zNormalizeClassName(refName) _ ", .sc) {" )
+                        Do methodDef.Implementation.WriteLine( $Char(9,9,9) _ "Return:$$$ISERR(sc) sc")
+                        Do methodDef.Implementation.WriteLine( $Char(9,9,9) _ "Do ..ListOf" _ $$$zNormalizeClassName(refName) _ ".Insert(" _ $$$zNormalizeClassName(refName) _ ")" )
+                        Do methodDef.Implementation.WriteLine( $Char(9,9) _ "}" )
+                        Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Return sc")
                 } Else {
                     Do methodDef.Implementation.WriteLine( $Char(9,9) _ "$$$ThrowStatus($$$ERROR($$$NotImplemented))")
                 }
