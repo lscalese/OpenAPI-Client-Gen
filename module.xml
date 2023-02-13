@@ -3,7 +3,7 @@
   <Document name="openapi-client-gen.ZPM">
     <Module>
       <Name>openapi-client-gen</Name>
-      <Description>IRIS Interoperability Production generator from OpenAPI specification.</Description>
+      <Description>IRIS HTTP Client And Interoperability Production generator from OpenAPI specification.</Description>
       <Version>2.1.0</Version>
       <Packaging>module</Packaging>
       <Dependencies>
