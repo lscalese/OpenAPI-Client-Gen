@@ -51,10 +51,12 @@ Method Generate() As %Status
 
     If '$$$defClassDefined(utilsClass) {    ;copy utils class to the target package
     
-        Merge ^oddDEF(utilsClass) = ^oddDEF("dc.openapi.client.Utils")
-        Set ^oddDEF(utilsClass, 1) = utilsClass
+        Set clsUtils = ##class(%Dictionary.ClassDefinition).%OpenId("dc.openapi.client.Utils").%ConstructClone()
+        Set clsUtils.Name = utilsClass
+        
+        Set sc = $$$ADDSC(sc, clsUtils.%Save())
         ; class copy, explicit compile is needed
-        $$$QuitOnError($SYSTEM.OBJ.Compile(utilsClass, "ck-d"))
+        Set sc = $$$ADDSC(sc, $SYSTEM.OBJ.Compile(utilsClass, "ck-d"))
     }
 
     ; Generate Production
