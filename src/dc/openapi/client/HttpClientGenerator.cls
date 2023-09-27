@@ -18,7 +18,9 @@ Property superGenericResponse As %String [ InitialExpression = "%RegisteredObjec
 
 Property superModel As %String [ InitialExpression = "%JSON.Adaptor,%XML.Adaptor,%RegisteredObject" ];
 
-Method %OnNew(specification As %DynamicObject, application As %String) As %Status
+Method %OnNew(
+	specification As %DynamicObject,
+	application As %String) As %Status
 {
     Set ..spec = specification
     Set ..application = application
@@ -73,7 +75,11 @@ Method GenerateModels() As %Status
     Quit sc
 }
 
-Method GenerateLoadHttpRequestObject(path As %String, pathItem As %DynamicObject, method As %String, operation As %DynamicObject) As %Status
+Method GenerateLoadHttpRequestObject(
+	path As %String,
+	pathItem As %DynamicObject,
+	method As %String,
+	operation As %DynamicObject) As %Status
 {
     #dim propDef As %Dictionary.PropertyDefinition
     Set sc = $$$OK
@@ -344,7 +350,11 @@ Method httpClientClass() As %Status [ Private ]
 }
 
 /// Generate method that execute the http request for a service into the HttpClient class
-Method GenerateMethodExecutor(path As %String, pathItem As %DynamicObject, method As %String, operation As %DynamicObject) As %Status
+Method GenerateMethodExecutor(
+	path As %String,
+	pathItem As %DynamicObject,
+	method As %String,
+	operation As %DynamicObject) As %Status
 {
     Set sc = $$$OK
     Set classDef = ##class(%Dictionary.ClassDefinition).%OpenId(..httpClientClassName,, .sc)
@@ -374,7 +384,11 @@ Method GenerateMethodExecutor(path As %String, pathItem As %DynamicObject, metho
     Quit classDef.%Save()
 }
 
-Method GenerateResponseClass(path As %String, pathItem As %DynamicObject, method As %String, operation As %DynamicObject) As %Status
+Method GenerateResponseClass(
+	path As %String,
+	pathItem As %DynamicObject,
+	method As %String,
+	operation As %DynamicObject) As %Status
 {
     Set sc = $$$OK
 
@@ -450,7 +464,11 @@ Method GenerateResponseClass(path As %String, pathItem As %DynamicObject, method
     Quit sc
 }
 
-Method GenerateLoadFromResponse(path As %String, pathItem As %DynamicObject, method As %String, operation As %DynamicObject) As %Status
+Method GenerateLoadFromResponse(
+	path As %String,
+	pathItem As %DynamicObject,
+	method As %String,
+	operation As %DynamicObject) As %Status
 {
     Set sc = $$$OK
     
@@ -490,12 +508,12 @@ Method GenerateLoadFromResponse(path As %String, pathItem As %DynamicObject, met
                 Set ref = ##class(dc.openapi.common.Utils).GetObjectByRef(..spec, contentTypeItem.schema."$ref", .refName)
                 Set k1 = ..packageModel_"."_ $$$zNormalizeClassName(refName)
                 If ref.type = "array" {
-                    Do methodDef.Implementation.WriteLine( $Char(9) _ "If $$$LOWER($Piece(httpResponse.ContentType,"";"",1))=""" _ contentType _ """,httpResponse.StatusCode = """ _ code _ """ {")
+                    Do methodDef.Implementation.WriteLine( $Char(9) _ "If $$$LOWER($Piece(httpResponse.ContentType,"";"",1))=""" _ contentType _ """,httpResponse.StatusCode = """ _ $tr(code,"""") _ """ {")
                     Do methodDef.Implementation.WriteLine( $Char(9,9) _ "$$$ThrowStatus($$$ERROR($$$NotImplemented))")
                     Do methodDef.Implementation.WriteLine( $Char(9) _ "}")
                 } Else {
                    
-                    Do methodDef.Implementation.WriteLine( $Char(9) _ "If $$$LOWER($Piece(httpResponse.ContentType,"";"",1))=""" _ contentType _ """,httpResponse.StatusCode = """ _ code _ """ {")
+                    Do methodDef.Implementation.WriteLine( $Char(9) _ "If $$$LOWER($Piece(httpResponse.ContentType,"";"",1))=""" _ contentType _ """,httpResponse.StatusCode = """ _ $tr(code,"""") _ """ {")
                     If contentType = "application/json" {
                         Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Set .." _ $$$zNormalizeClassName(refName) _ " = ##class("_k1 _").%New()")
                         Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Do .." _ $$$zNormalizeClassName(refName) _ ".%JSONImport(httpResponse.Data)")
@@ -523,7 +541,7 @@ Method GenerateLoadFromResponse(path As %String, pathItem As %DynamicObject, met
                 Set ref = ##class(dc.openapi.common.Utils).GetObjectByRef(..spec, contentTypeItem.schema.items."$ref", .refName)
                 Set k1 = ..packageModel_"."_ $$$zNormalizeClassName(refName)
                 
-                Do methodDef.Implementation.WriteLine( $Char(9) _ "If $$$LOWER($Piece(httpResponse.ContentType,"";"",1))=""" _ contentType _ """,httpResponse.StatusCode = """ _ code _ """ {")
+                Do methodDef.Implementation.WriteLine( $Char(9) _ "If $$$LOWER($Piece(httpResponse.ContentType,"";"",1))=""" _ contentType _ """,httpResponse.StatusCode = """ _ $tr(code,"""") _ """ {")
                 If contentType = "application/json" {
                     Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Set array = [].%FromJSON(httpResponse.Data), iterator = array.%GetIterator()")
                     Do methodDef.Implementation.WriteLine( $Char(9,9) _ "While iterator.%GetNext(.index, .item) {")
