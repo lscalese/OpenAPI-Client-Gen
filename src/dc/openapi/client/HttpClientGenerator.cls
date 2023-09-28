@@ -168,7 +168,9 @@ Method GenerateLoadHttpRequestObject(
 
     While bodyHelperIterator.%GetNext(.propertyName, .propertyDetail) {
         
-        Set propDef = $$$FindPropertyName(classDef, $$$NormalizePropertyParamName(propertyName))
+        Set nrmPropertyName = $$$NormalizePropertyParamName(propertyName)
+
+        Set propDef = $$$FindPropertyName(classDef, nrmPropertyName)
         If '$IsObject(propDef) {
             Set errMsg = $$$FormatText("Property definition %1 not found in class %2", propertyName, classDef.Name)
             $$$zlog($Char(9) _ "! " _ errMsg)
@@ -183,13 +185,13 @@ Method GenerateLoadHttpRequestObject(
             
             If propDef.Type [ "%Stream" {
                 Set line = condition _" Do httpRequest.EntityBody.CopyFrom(..%1)"
-                Do methodDef.Implementation.WriteLine( $Char(9) _ $$$FormatText(line, propertyName))
+                Do methodDef.Implementation.WriteLine( $Char(9) _ $$$FormatText(line, nrmPropertyName))
                 Continue
             }
 
             If propDef.Type [ "%Dynamic" {
                 Set line = condition _ " Do ..%1.%JSONExportToStream(httpRequest.EntityBody)"
-                Do methodDef.Implementation.WriteLine( $Char(9) _ $$$FormatText(line, propertyName))
+                Do methodDef.Implementation.WriteLine( $Char(9) _ $$$FormatText(line, nrmPropertyName))
                 Continue
             }
 
@@ -199,7 +201,7 @@ Method GenerateLoadHttpRequestObject(
                     Do methodDef.Implementation.WriteLine( "" )
                     Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Set key = """", array = []")
                     Do methodDef.Implementation.WriteLine( $Char(9,9) _ "For  {")
-                    Do methodDef.Implementation.WriteLine( $Char(9,9,9) _ "Set tmpObject = .."_ propertyName _ ".GetNext(.key)")
+                    Do methodDef.Implementation.WriteLine( $Char(9,9,9) _ "Set tmpObject = .."_ nrmPropertyName _ ".GetNext(.key)")
                     Do methodDef.Implementation.WriteLine( $Char(9,9,9) _ "Quit:key=""""")
                     Do methodDef.Implementation.WriteLine( $Char(9,9,9) _ "Do tmpObject.%JSONExportToStream(.tmpStream), array.%Push({}.%FromJSON(tmpStream))")
                     Do methodDef.Implementation.WriteLine( $Char(9,9,9) _ "Kill tmpStream")
@@ -209,13 +211,13 @@ Method GenerateLoadHttpRequestObject(
                     Do methodDef.Implementation.WriteLine( $Char(9) _ "}")
                 } Else {
                     Set line = condition _ " Do ..%1.%JSONExportToStream(httpRequest.EntityBody)"
-                    Do methodDef.Implementation.WriteLine( $Char(9) _ $$$FormatText(line, propertyName))
+                    Do methodDef.Implementation.WriteLine( $Char(9) _ $$$FormatText(line, nrmPropertyName))
                 }
 
             } ElseIf $$$LOWER(contentType) [ "application/xml" {
 
                 Set line = condition _ " Do ..%1.XMLExportToStream(httpRequest.EntityBody)"
-                Do methodDef.Implementation.WriteLine( $Char(9) _ $$$FormatText(line, propertyName))
+                Do methodDef.Implementation.WriteLine( $Char(9) _ $$$FormatText(line, nrmPropertyName))
 
             } ElseIf ($$$LOWER(contentType) [ "multipart/form-data") {
                 
@@ -225,7 +227,7 @@ Method GenerateLoadHttpRequestObject(
                     Set mWriter = $$$YES
                     ;Do methodDef.Implementation.WriteLine( $Char(9,9) _ "")
                     Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Set valueStream = ##class(%Stream.GlobalBinary).%New()")
-                    Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Do valueStream.CopyFrom(.." _ propertyName _ ")")
+                    Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Do valueStream.CopyFrom(.." _ nrmPropertyName _ ")")
                     ; Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Set:'$IsObject($Get(mParts)) mParts = ##class(%Net.MIMEPart).%New()")
                     Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Set mParts = ##class(%Net.MIMEPart).%New()")
                     Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Set mimePart = ##class(%Net.MIMEPart).%New(valueStream)")
