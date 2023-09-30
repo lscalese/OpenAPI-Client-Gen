@@ -395,6 +395,7 @@ Method GenerateResponseClass(
     Set sc = $$$OK
 
     Set className = ..packageResponse _ "." _ $$$zNormalizeClassName(operation.operationId)
+    
     #dim classDef As %Dictionary.ClassDefinition
     $$$QuitOnError(##class(dc.openapi.common.Utils).CreateClassDefInstance(className, .classDef))
     Set classDef.Super = ..superResponse
@@ -432,10 +433,17 @@ Method GenerateResponseClass(
 
             } ElseIf contentTypeItem.schema.type = "array" {
                 Set ref = ##class(dc.openapi.common.Utils).GetObjectByRef(..spec, contentTypeItem.schema.items."$ref", .refName)
-                Set k1 = ..packageModel_"."_ $$$zNormalizeClassName(refName)
-                Set propertyToGen(k1, 1) = "ListOf" _$$$zNormalizeClassName(refName)
-                Set propertyToGen(k1, 1, "description") = $Get(propertyToGen(k1, 1, "description"))
-                    _ "http status code = "_code _" content-type = " _contentType_$c(13,10)
+                If contentTypeItem.schema.items.type = "string" { ; inline array
+                    Set k1 = "%DynamicArray"
+                    Set propertyToGen(k1, 0) = "ResponseArray"
+                    Set propertyToGen(k1, 0, "description") = $Get(propertyToGen(k1, 0, "description"))
+                        _ "http status code = "_code _" content-type = " _contentType_$c(13,10)
+                } else {
+                    Set k1 = ..packageModel_"."_ $$$zNormalizeClassName(refName)
+                    Set propertyToGen(k1, 1) = "ListOf" _$$$zNormalizeClassName(refName)
+                    Set propertyToGen(k1, 1, "description") = $Get(propertyToGen(k1, 1, "description"))
+                        _ "http status code = "_code _" content-type = " _contentType_$c(13,10)
+                }
             }
 
         }
@@ -462,7 +470,7 @@ Method GenerateResponseClass(
     }
 
     Set sc = classDef.%Save()
-
+    zw sc
     Quit sc
 }
 
@@ -541,10 +549,15 @@ Method GenerateLoadFromResponse(
                 }
             } ElseIf contentTypeItem.schema.type = "array" {
                 Set ref = ##class(dc.openapi.common.Utils).GetObjectByRef(..spec, contentTypeItem.schema.items."$ref", .refName)
+                
                 Set k1 = ..packageModel_"."_ $$$zNormalizeClassName(refName)
                 
                 Do methodDef.Implementation.WriteLine( $Char(9) _ "If $$$LOWER($Piece(httpResponse.ContentType,"";"",1))=""" _ contentType _ """,httpResponse.StatusCode = """ _ $tr(code,"""") _ """ {")
-                If contentType = "application/json" {
+
+                If contentType = "application/json", contentTypeItem.schema.%IsDefined("items"), contentTypeItem.schema.items.type = "string" { ;inline array
+                    Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Set ..ResponseArray = [].%FromJSON(httpResponse.Data)")
+                    Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Return sc")
+                } ElseIf contentType = "application/json" {
                     Do methodDef.Implementation.WriteLine( $Char(9,9) _ "Set array = [].%FromJSON(httpResponse.Data), iterator = array.%GetIterator()")
                     Do methodDef.Implementation.WriteLine( $Char(9,9) _ "While iterator.%GetNext(.index, .item) {")
                     Do methodDef.Implementation.WriteLine( $Char(9,9,9) _ "Set obj = ##class("_k1 _").%New()")
