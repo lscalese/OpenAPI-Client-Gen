@@ -1,5 +1,7 @@
 ## OPENAPI Client Gen
 
+**Important** : **To make maintenance easier, this package has been merged with  [openapi-suite](https://openexchange.intersystems.com/package/OpenAPI-Suite) ( [Link to GitHub repository](https://github.com/lscalese/openapi-suite) ).  Consider this package deprecated and replaced by openapi-suite (classes have kept the same name)**
+
 This is an application to generate a [simple REST Http client](#Simple-Http-Client-Sample) or an [Iris interoperability production](#Production-Sample) client from a OpenAPI specification.  
 Instead of existing tools, this application generates client production.
 
